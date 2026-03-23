@@ -1,0 +1,2288 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+
+type Cell = { col: number; row: number };
+
+type SecretType = "heart" | "boss" | "alien" | "ace";
+
+type LevelConfig = {
+  id: number;
+  name: string;
+  cols: number;
+  rows: number;
+  isSecret?: boolean;
+  secretType?: SecretType;
+};
+
+type RewardId =
+  | "heart"
+  | "boss"
+  | "alien"
+  | "ace"
+  | "speed"
+  | "gift"
+  | "slow"
+  | "brain";
+
+type Reward = {
+  id: RewardId;
+  emoji: string;
+};
+
+type HintEnvelopeId = "heart" | "alien" | "boss" | "ace";
+
+type HintEnvelope = {
+  id: HintEnvelopeId;
+  cell: Cell;
+  text: string;
+};
+
+const SHARE_LINK = "https://linktr.ee/tiagooliva";
+
+const MAX_CLICKS = 5;
+const SLEEP_LIMIT_SECONDS = 33 * 60 + 33;
+const IDLE_KNOCK_MS = 33_000;
+const FIM_CELL_SIZE = 34;
+const NORMAL_CELL_SIZE = 46;
+
+const LEVELS: LevelConfig[] = [
+  { id: 1, name: "Nível 1", cols: 10, rows: 6 },
+  { id: 2, name: "Nível 2", cols: 14, rows: 8 },
+  { id: 3, name: "Nível 3", cols: 18, rows: 10 },
+  { id: 4, name: "Fase Secreta", cols: 11, rows: 9, isSecret: true, secretType: "heart" },
+  { id: 5, name: "FINAL BOSS", cols: 15, rows: 13, isSecret: true, secretType: "boss" },
+  { id: 6, name: "AREA 51", cols: 15, rows: 15, isSecret: true, secretType: "alien" },
+  { id: 7, name: "ACE", cols: 15, rows: 15, isSecret: true, secretType: "ace" },
+];
+
+const REWARD_META: Record<RewardId, Reward> = {
+  heart: { id: "heart", emoji: "❤️" },
+  boss: { id: "boss", emoji: "💀" },
+  alien: { id: "alien", emoji: "👽" },
+  ace: { id: "ace", emoji: "♠️" },
+  speed: { id: "speed", emoji: "🐇" },
+  gift: { id: "gift", emoji: "🎁" },
+  slow: { id: "slow", emoji: "🐢" },
+  brain: { id: "brain", emoji: "🧠" },
+};
+
+const HINT_TEXTS: Record<HintEnvelopeId, string> = {
+  heart: "voce nao me conhece, mas gosto de ser o ultimo em todos os lugares",
+  alien: "existem objetos nao identificados naquela area que ja passou",
+  boss: "esse ser maligno tem um numero proprio",
+  ace: "essa jogo é AAA, pra mim sempre será o numero 1!",
+};
+
+const HINT_CARD_EMOJI: Record<HintEnvelopeId, string> = {
+  heart: "💌",
+  alien: "💌",
+  boss: "💌",
+  ace: "💌",
+};
+
+const FINAL_MESSAGES = [
+  "Lenda absoluta. Menos de 10 segundos? Isso foi humilhante pro Desenvolvedor",
+  "Você não jogou. Você executou uma operação tática.",
+  "O tesouro devia estar arrependido de ter se escondido.",
+  "Velocidade absurda. Nem deu tempo do mapa respirar.",
+  "Cirúrgico. Você e o tesouro já tinham um encontro marcado.",
+  "Muito forte. O jogo achou que teria mais chances.",
+  "Classe mundial. Isso aqui foi aula.",
+  "Tempo excelente. Dá pra dizer que você tem faro de tesouro.",
+  "Mandou bem demais. O tesouro piscou e perdeu.",
+  "Você foi rápido. O suficiente pra irritar quem ainda está no nível 1.",
+  "Boa. Esse tempo já dá pra compartilhar sem vergonha nenhuma.",
+  "Desempenho sólido. O tesouro tentou, mas não muito.",
+  "Foi bem. Nada lendário, mas ainda respeitável.",
+  "Passou com estilo. O cronômetro nem ficou tão ofendido.",
+  "Ok, agora começou a ficar interessante.",
+  "Tá bom... não foi rápido, mas também não foi um documentário.",
+  "Demorou um pouco, mas chegou lá. E isso conta.",
+  "Vitória honesta. Sem pressa, sem glória, mas vitória.",
+  "O importante é que achou. Eventualmente.",
+  "Foi quase uma trilogia, mas terminou bem.",
+  "Esse tempo já foi suficiente pro tesouro repensar a vida.",
+  "Confesso que a vovó teve mais iniciativa hoje.",
+  "Você venceu, mas o cronômetro saiu rindo.",
+  "Tudo certo... só não coloca isso no currículo.",
+  "A caça virou passeio. Um passeio bem longo.",
+  "O tesouro já estava cogitando se entregar sozinho.",
+  "Se existisse multa por demora, hoje vinha boleto.",
+  "A vovó passou aqui, achou e ainda fez café.",
+  "Parabéns, eu acho. O tesouro quase pediu aposentadoria antes.",
+  "Você encontrou, mas o mapa já estava te dando pena.",
+  "Foi tão demorado que o tesouro rendeu juros.",
+  "Resultado oficial: até a vovó foi mais rápida hoje.",
+  "Vitória confirmada. Dignidade em análise.",
+];
+
+const FIREWORKS = ["🎆", "🎇", "✨", "🎉"];
+
+const FIM_PATTERN = [
+  "111110101100011",
+  "100000101110111",
+  "111100101001001",
+  "100000101000001",
+  "100000101000001",
+  "100000101000001",
+  "100000101000001",
+];
+
+function invertDirection(direction: string) {
+  const vertical =
+    direction.includes("↑") ? "↓" :
+    direction.includes("↓") ? "↑" :
+    "";
+
+  const horizontal =
+    direction.includes("←") ? "→" :
+    direction.includes("→") ? "←" :
+    "";
+
+  return vertical + horizontal;
+}
+
+function formatTime(seconds: number) {
+  const safe = Math.max(0, seconds);
+  const mins = Math.floor(safe / 60);
+  const secs = safe % 60;
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
+}
+
+function getFinalMessage(totalSeconds: number) {
+  if (totalSeconds < 10) return FINAL_MESSAGES[0];
+  const index = Math.min(
+    FINAL_MESSAGES.length - 1,
+    1 + Math.floor((totalSeconds - 10) / 3)
+  );
+  return FINAL_MESSAGES[index];
+}
+
+function cellKey(cell: Cell) {
+  return `${cell.col}-${cell.row}`;
+}
+
+function getDirection(
+  from: Cell,
+  to: Cell,
+  cols: number,
+  rows: number,
+  trollMode = false
+) {
+  const vertical = to.row > from.row ? "↓" : to.row < from.row ? "↑" : "";
+  const horizontal = to.col > from.col ? "→" : to.col < from.col ? "←" : "";
+
+  const normalDir = vertical + horizontal;
+  const dir = trollMode ? invertDirection(normalDir) : normalDir;
+
+  const safeVertical = dir.includes("↑")
+    ? (from.row > 0 ? "↑" : "")
+    : dir.includes("↓")
+      ? (from.row < rows - 1 ? "↓" : "")
+      : "";
+
+  const safeHorizontal = dir.includes("←")
+    ? (from.col > 0 ? "←" : "")
+    : dir.includes("→")
+      ? (from.col < cols - 1 ? "→" : "")
+      : "";
+
+  return safeVertical + safeHorizontal;
+}
+
+function randomCellAvoiding(cols: number, rows: number, blockedKeys: Set<string>): Cell {
+  const valid: Cell[] = [];
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const key = `${col}-${row}`;
+      if (!blockedKeys.has(key)) valid.push({ col, row });
+    }
+  }
+  return valid[Math.floor(Math.random() * valid.length)];
+}
+
+function randomManyCellsAvoiding(
+  cols: number,
+  rows: number,
+  blockedKeys: Set<string>,
+  count: number
+): Cell[] {
+  const pool: Cell[] = [];
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const key = `${col}-${row}`;
+      if (!blockedKeys.has(key)) pool.push({ col, row });
+    }
+  }
+
+  const result: Cell[] = [];
+  const copy = [...pool];
+
+  for (let i = 0; i < count && copy.length > 0; i++) {
+    const index = Math.floor(Math.random() * copy.length);
+    result.push(copy.splice(index, 1)[0]);
+  }
+
+  return result;
+}
+
+function isHeartCell(row: number, col: number, rows: number, cols: number) {
+  const pattern = [
+    "01100110",
+    "11111111",
+    "11111111",
+    "11111111",
+    "01111110",
+    "00111100",
+    "00011000",
+  ];
+
+  const rowOffset = Math.floor((rows - pattern.length) / 2);
+  const colOffset = Math.floor((cols - pattern[0].length) / 2);
+  const r = row - rowOffset;
+  const c = col - colOffset;
+
+  if (r < 0 || r >= pattern.length || c < 0 || c >= pattern[0].length) return false;
+  return pattern[r][c] === "1";
+}
+
+const SKULL_PATTERN = [
+  "000011111110000",
+  "000111111111000",
+  "001111111111100",
+  "011110111011110",
+  "011100111001110",
+  "111100010001111",
+  "111111111111111",
+  "111111111111111",
+  "011111111111110",
+  "001111111111100",
+  "000111101111000",
+  "000110101011000",
+  "000011010110000",
+];
+
+function getSkullOffsets(rows: number, cols: number) {
+  return {
+    rowOffset: Math.floor((rows - SKULL_PATTERN.length) / 2),
+    colOffset: Math.floor((cols - SKULL_PATTERN[0].length) / 2),
+  };
+}
+
+function isSkullCell(row: number, col: number, rows: number, cols: number) {
+  const { rowOffset, colOffset } = getSkullOffsets(rows, cols);
+  const r = row - rowOffset;
+  const c = col - colOffset;
+
+  if (r < 0 || r >= SKULL_PATTERN.length || c < 0 || c >= SKULL_PATTERN[0].length) {
+    return false;
+  }
+  return SKULL_PATTERN[r][c] === "1";
+}
+
+function isSkullEyeCell(row: number, col: number, rows: number, cols: number) {
+  const { rowOffset, colOffset } = getSkullOffsets(rows, cols);
+  const r = row - rowOffset;
+  const c = col - colOffset;
+
+  const eyes = new Set([
+    "3-5", "3-9",
+    "4-4", "4-5", "4-9", "4-10",
+    "5-4", "5-5", "5-9", "5-10",
+  ]);
+
+  return eyes.has(`${r}-${c}`);
+}
+
+function isSkullTeethCell(row: number, col: number, rows: number, cols: number) {
+  const { rowOffset, colOffset } = getSkullOffsets(rows, cols);
+  const r = row - rowOffset;
+  const c = col - colOffset;
+
+  const teeth = new Set([
+    "11-4", "11-5", "11-7", "11-9", "11-10",
+    "12-5", "12-7", "12-8", "12-9",
+  ]);
+
+  return teeth.has(`${r}-${c}`);
+}
+
+const ALIEN_PATTERN = [
+  "000000111000000",
+  "000001111100000",
+  "000011111110000",
+  "000111111111000",
+  "001111111111100",
+  "001111111111100",
+  "011111111111110",
+  "011111111111110",
+  "011111111111110",
+  "011111111111110",
+  "001111111111100",
+  "001111111111100",
+  "000111111111000",
+  "000011111110000",
+  "000001111100000",
+];
+
+function getAlienOffsets(rows: number, cols: number) {
+  return {
+    rowOffset: Math.floor((rows - ALIEN_PATTERN.length) / 2),
+    colOffset: Math.floor((cols - ALIEN_PATTERN[0].length) / 2),
+  };
+}
+
+function isAlienCell(row: number, col: number, rows: number, cols: number) {
+  const { rowOffset, colOffset } = getAlienOffsets(rows, cols);
+  const r = row - rowOffset;
+  const c = col - colOffset;
+
+  if (r < 0 || r >= ALIEN_PATTERN.length || c < 0 || c >= ALIEN_PATTERN[0].length) {
+    return false;
+  }
+  return ALIEN_PATTERN[r][c] === "1";
+}
+
+function isAlienEyeCell(row: number, col: number, rows: number, cols: number) {
+  const { rowOffset, colOffset } = getAlienOffsets(rows, cols);
+  const r = row - rowOffset;
+  const c = col - colOffset;
+
+  const eyes = new Set([
+    "5-3", "5-4", "5-5",
+    "6-2", "6-3", "6-4", "6-5",
+    "7-2", "7-3", "7-4", "7-5",
+    "8-3", "8-4",
+    "5-9", "5-10", "5-11",
+    "6-9", "6-10", "6-11", "6-12",
+    "7-9", "7-10", "7-11", "7-12",
+    "8-10", "8-11",
+  ]);
+
+  return eyes.has(`${r}-${c}`);
+}
+
+const SPADE_PATTERN = [
+  "000000010000000",
+  "000000111000000",
+  "000001111100000",
+  "000011111110000",
+  "000111111111000",
+  "001111111111100",
+  "011111111111110",
+  "011111111111110",
+  "001111111111100",
+  "000111111111000",
+  "000011111110000",
+  "000001111100000",
+  "000000111000000",
+  "000000111000000",
+  "000001111100000",
+];
+
+function getSpadeOffsets(rows: number, cols: number) {
+  return {
+    rowOffset: Math.floor((rows - SPADE_PATTERN.length) / 2),
+    colOffset: Math.floor((cols - SPADE_PATTERN[0].length) / 2),
+  };
+}
+
+function isSpadeCell(row: number, col: number, rows: number, cols: number) {
+  const { rowOffset, colOffset } = getSpadeOffsets(rows, cols);
+  const r = row - rowOffset;
+  const c = col - colOffset;
+
+  if (r < 0 || r >= SPADE_PATTERN.length || c < 0 || c >= SPADE_PATTERN[0].length) {
+    return false;
+  }
+  return SPADE_PATTERN[r][c] === "1";
+}
+
+function isSpadeStemCell(row: number, col: number, rows: number, cols: number) {
+  const { rowOffset, colOffset } = getSpadeOffsets(rows, cols);
+  const r = row - rowOffset;
+  const c = col - colOffset;
+
+  const stem = new Set([
+    "12-6", "12-7", "12-8",
+    "13-6", "13-7", "13-8",
+    "14-5", "14-6", "14-7", "14-8", "14-9",
+  ]);
+
+  return stem.has(`${r}-${c}`);
+}
+
+function randomHeartTreasure(rows: number, cols: number): Cell {
+  const valid: Cell[] = [];
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      if (isHeartCell(row, col, rows, cols)) valid.push({ row, col });
+    }
+  }
+  return valid[Math.floor(Math.random() * valid.length)];
+}
+
+function randomBossTreasure(rows: number, cols: number): Cell {
+  const valid: Cell[] = [];
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      if (isSkullCell(row, col, rows, cols)) valid.push({ row, col });
+    }
+  }
+  return valid[Math.floor(Math.random() * valid.length)];
+}
+
+function randomAlienTreasure(rows: number, cols: number): Cell {
+  const valid: Cell[] = [];
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      if (isAlienCell(row, col, rows, cols)) valid.push({ row, col });
+    }
+  }
+  return valid[Math.floor(Math.random() * valid.length)];
+}
+
+function randomAceTreasure(rows: number, cols: number): Cell {
+  const valid: Cell[] = [];
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      if (isSpadeCell(row, col, rows, cols)) valid.push({ row, col });
+    }
+  }
+  return valid[Math.floor(Math.random() * valid.length)];
+}
+
+function getLevelOneBlocked(cols: number, rows: number) {
+  return new Set<string>([
+    `${cols - 1}-${rows - 1}`,
+    "5-0",
+    "8-0",
+    "4-0",
+    "0-0",
+  ]);
+}
+
+function getLevelTwoBlocked(cols: number, rows: number) {
+  return new Set<string>([
+    `${cols - 1}-${rows - 1}`,
+    "5-0",
+    "8-0",
+    "0-0",
+  ]);
+}
+
+function getLevelThreeBlocked(cols: number, rows: number) {
+  return new Set<string>([
+    `${cols - 1}-${rows - 1}`,
+    "5-0",
+    "8-0",
+    "0-0",
+  ]);
+}
+
+export default function Home() {
+  const [boardSeed, setBoardSeed] = useState(0);
+
+  const [currentLevel, setCurrentLevel] = useState(1);
+  const [unlockedLevels, setUnlockedLevels] = useState<number[]>([1]);
+
+  const [treasure, setTreasure] = useState<Cell | null>(null);
+  const [clicks, setClicks] = useState(0);
+  const [hint, setHint] = useState("");
+  const [statusMessage, setStatusMessage] = useState("");
+  const [signalMessage, setSignalMessage] = useState("");
+  const [idleMessage, setIdleMessage] = useState("");
+  const [found, setFound] = useState(false);
+  const [clickedCells, setClickedCells] = useState<string[]>([]);
+  const [shareMessage, setShareMessage] = useState("");
+
+  const [gameFinished, setGameFinished] = useState(false);
+  const [mainGameFinished, setMainGameFinished] = useState(false);
+  const [sleepMode, setSleepMode] = useState(false);
+  const [totalElapsed, setTotalElapsed] = useState(0);
+  const [gameOver, setGameOver] = useState(false);
+
+  const [heartSecretProgress, setHeartSecretProgress] = useState<number[]>([]);
+  const [heartSecretUnlocked, setHeartSecretUnlocked] = useState(false);
+
+  const [bossSecretProgress, setBossSecretProgress] = useState<number[]>([]);
+  const [bossSecretUnlocked, setBossSecretUnlocked] = useState(false);
+
+  const [alienSequenceStep, setAlienSequenceStep] = useState(0);
+  const [alienSecretUnlocked, setAlienSecretUnlocked] = useState(false);
+
+  const [aceSecretProgress, setAceSecretProgress] = useState<number[]>([]);
+  const [aceSecretUnlocked, setAceSecretUnlocked] = useState(false);
+
+  const [titleClicks, setTitleClicks] = useState(0);
+  const [trollMode, setTrollMode] = useState(false);
+
+  const [collectedRewards, setCollectedRewards] = useState<Reward[]>([]);
+  const [finalCelebration, setFinalCelebration] = useState(false);
+  const [fimUnlocked, setFimUnlocked] = useState(false);
+  const [finalClickedCells, setFinalClickedCells] = useState<string[]>([]);
+
+  const [hasKey, setHasKey] = useState(false);
+  const [giftUnlocked, setGiftUnlocked] = useState(false);
+  const [levelOneKeyCells, setLevelOneKeyCells] = useState<Cell[]>([]);
+  const [revealedKeyCell, setRevealedKeyCell] = useState<Cell | null>(null);
+  const [levelThreeLockCell, setLevelThreeLockCell] = useState<Cell | null>(null);
+  const [giftOpenedThisRun, setGiftOpenedThisRun] = useState(false);
+
+  const [bombCells, setBombCells] = useState<Cell[]>([]);
+  const [levelTwoHintCells, setLevelTwoHintCells] = useState<HintEnvelope[]>([]);
+  const [foundHintCards, setFoundHintCards] = useState<HintEnvelopeId[]>([]);
+
+  const [sixNineProgress, setSixNineProgress] = useState<Record<number, number>>({
+    1: 0,
+    2: 0,
+    3: 0,
+  });
+  const [sixNineDone, setSixNineDone] = useState<number[]>([]);
+
+  const totalTimerStartedRef = useRef<number | null>(null);
+  const lastBossActionRef = useRef<number | null>(null);
+  const lastInteractionRef = useRef<number>(Date.now());
+  const lastKnockRef = useRef<number>(Date.now());
+
+  const signalTimeoutRef = useRef<number | null>(null);
+  const idleTimeoutRef = useRef<number | null>(null);
+  const statusTimeoutRef = useRef<number | null>(null);
+
+  const level = useMemo(
+    () => LEVELS.find((lvl) => lvl.id === currentLevel)!,
+    [currentLevel]
+  );
+
+  const finalMessage = useMemo(
+    () => getFinalMessage(totalElapsed),
+    [totalElapsed]
+  );
+
+  function hasReward(id: RewardId) {
+    return collectedRewards.some((reward) => reward.id === id);
+  }
+
+  function startTimers() {
+    if (!totalTimerStartedRef.current) {
+      totalTimerStartedRef.current = Date.now();
+    }
+  }
+
+  function stopTotalTimer() {
+    if (!totalTimerStartedRef.current) return;
+    const elapsed = Math.floor((Date.now() - totalTimerStartedRef.current) / 1000);
+    setTotalElapsed(elapsed);
+    totalTimerStartedRef.current = null;
+  }
+
+  function touchInteraction() {
+    const now = Date.now();
+    lastInteractionRef.current = now;
+    lastKnockRef.current = now;
+    setIdleMessage("");
+    if (idleTimeoutRef.current) {
+      window.clearTimeout(idleTimeoutRef.current);
+    }
+  }
+
+  function flashStatus(message: string, ms = 1800) {
+    setStatusMessage(message);
+    if (statusTimeoutRef.current) {
+      window.clearTimeout(statusTimeoutRef.current);
+    }
+    statusTimeoutRef.current = window.setTimeout(() => {
+      setStatusMessage("");
+    }, ms);
+  }
+
+  function flashSignal(message: string, ms = 1000) {
+    setSignalMessage(message);
+    if (signalTimeoutRef.current) {
+      window.clearTimeout(signalTimeoutRef.current);
+    }
+    signalTimeoutRef.current = window.setTimeout(() => {
+      setSignalMessage("");
+    }, ms);
+  }
+
+  function flashIdle(message: string, ms = 1000) {
+    setIdleMessage(message);
+    if (idleTimeoutRef.current) {
+      window.clearTimeout(idleTimeoutRef.current);
+    }
+    idleTimeoutRef.current = window.setTimeout(() => {
+      setIdleMessage("");
+    }, ms);
+  }
+
+  function addReward(id: RewardId) {
+    setCollectedRewards((prev) => {
+      if (prev.some((reward) => reward.id === id)) return prev;
+
+      const next = [...prev, REWARD_META[id]];
+
+      if (next.length >= 5 && !fimUnlocked) {
+        setFimUnlocked(true);
+        setFinalCelebration(true);
+        stopTotalTimer();
+        setStatusMessage("");
+        setHint("");
+      }
+
+      return next;
+    });
+  }
+
+  function resetGame() {
+    setFinalCelebration(false);
+    setCurrentLevel(1);
+    setBoardSeed((s) => s + 1);
+    setUnlockedLevels([1]);
+
+    setClicks(0);
+    setHint("");
+    setStatusMessage("");
+    setSignalMessage("");
+    setIdleMessage("");
+    setFound(false);
+    setClickedCells([]);
+    setShareMessage("");
+    setGameFinished(false);
+    setMainGameFinished(false);
+    setSleepMode(false);
+    setGameOver(false);
+    setTotalElapsed(0);
+
+    setHeartSecretProgress([]);
+    setHeartSecretUnlocked(false);
+
+    setBossSecretProgress([]);
+    setBossSecretUnlocked(false);
+
+    setAlienSequenceStep(0);
+    setAlienSecretUnlocked(false);
+
+    setAceSecretProgress([]);
+    setAceSecretUnlocked(false);
+
+    setGiftOpenedThisRun(false);
+    setBombCells([]);
+    setLevelTwoHintCells([]);
+    setFinalClickedCells([]);
+    setLevelOneKeyCells([]);
+    setRevealedKeyCell(null);
+    setLevelThreeLockCell(null);
+
+    setHasKey(false);
+    setGiftUnlocked(false);
+
+    setSixNineProgress({ 1: 0, 2: 0, 3: 0 });
+    setSixNineDone([]);
+
+    setTitleClicks(0);
+    setTrollMode(false);
+
+    totalTimerStartedRef.current = null;
+    startTimers();
+
+    const now = Date.now();
+    lastBossActionRef.current = now;
+    lastInteractionRef.current = now;
+    lastKnockRef.current = now;
+  }
+
+  useEffect(() => {
+    const bombCount =
+      !level.isSecret && currentLevel === 1
+        ? 1
+        : !level.isSecret && currentLevel === 2
+          ? 2
+          : !level.isSecret && currentLevel === 3
+            ? 3
+            : 0;
+
+    setClicks(0);
+    setHint("");
+    setStatusMessage("");
+    setSignalMessage("");
+    setIdleMessage("");
+    setFound(false);
+    setClickedCells([]);
+    setShareMessage("");
+    setGameOver(false);
+    setGiftOpenedThisRun(false);
+    setRevealedKeyCell(null);
+
+    if (level.secretType === "heart") {
+      setTreasure(randomHeartTreasure(level.rows, level.cols));
+      setLevelOneKeyCells([]);
+      setLevelThreeLockCell(null);
+      setBombCells([]);
+      setLevelTwoHintCells([]);
+    } else if (level.secretType === "boss") {
+      setTreasure(randomBossTreasure(level.rows, level.cols));
+      lastBossActionRef.current = Date.now();
+      setLevelOneKeyCells([]);
+      setLevelThreeLockCell(null);
+      setBombCells([]);
+      setLevelTwoHintCells([]);
+    } else if (level.secretType === "alien") {
+      setTreasure(randomAlienTreasure(level.rows, level.cols));
+      setLevelOneKeyCells([]);
+      setLevelThreeLockCell(null);
+      setBombCells([]);
+      setLevelTwoHintCells([]);
+    } else if (level.secretType === "ace") {
+      setTreasure(randomAceTreasure(level.rows, level.cols));
+      setLevelOneKeyCells([]);
+      setLevelThreeLockCell(null);
+      setBombCells([]);
+      setLevelTwoHintCells([]);
+    } else {
+      if (currentLevel === 1) {
+        const blocked = getLevelOneBlocked(level.cols, level.rows);
+        const nextTreasure = randomCellAvoiding(level.cols, level.rows, blocked);
+        setTreasure(nextTreasure);
+
+        const blockedWithTreasure = new Set(blocked);
+        blockedWithTreasure.add(cellKey(nextTreasure));
+
+        const keysShouldExist = !hasKey && !giftUnlocked;
+        if (keysShouldExist) {
+          const firstKey = randomCellAvoiding(level.cols, level.rows, blockedWithTreasure);
+          blockedWithTreasure.add(cellKey(firstKey));
+          const secondKey = randomCellAvoiding(level.cols, level.rows, blockedWithTreasure);
+          blockedWithTreasure.add(cellKey(secondKey));
+          setLevelOneKeyCells([firstKey, secondKey]);
+        } else {
+          setLevelOneKeyCells([]);
+        }
+
+        setLevelThreeLockCell(null);
+        setLevelTwoHintCells([]);
+
+        const bombs = randomManyCellsAvoiding(
+          level.cols,
+          level.rows,
+          blockedWithTreasure,
+          bombCount
+        );
+        setBombCells(bombs);
+      } else if (currentLevel === 2) {
+        const blocked = getLevelTwoBlocked(level.cols, level.rows);
+        const nextTreasure = randomCellAvoiding(level.cols, level.rows, blocked);
+        setTreasure(nextTreasure);
+
+        const blockedWithTreasure = new Set(blocked);
+        blockedWithTreasure.add(cellKey(nextTreasure));
+
+        setLevelOneKeyCells([]);
+        setLevelThreeLockCell(null);
+
+        const activeHintIds: HintEnvelopeId[] = [];
+
+        if (!heartSecretUnlocked && !foundHintCards.includes("heart")) activeHintIds.push("heart");
+        if (!alienSecretUnlocked && !foundHintCards.includes("alien")) activeHintIds.push("alien");
+        if (!bossSecretUnlocked && !foundHintCards.includes("boss")) activeHintIds.push("boss");
+        if (!aceSecretUnlocked && !foundHintCards.includes("ace")) activeHintIds.push("ace");
+
+        const generatedHints: HintEnvelope[] = [];
+        const blockedForHints = new Set(blockedWithTreasure);
+
+        for (const id of activeHintIds) {
+          const cellA = randomCellAvoiding(level.cols, level.rows, blockedForHints);
+          blockedForHints.add(cellKey(cellA));
+          const cellB = randomCellAvoiding(level.cols, level.rows, blockedForHints);
+          blockedForHints.add(cellKey(cellB));
+
+          generatedHints.push({ id, cell: cellA, text: HINT_TEXTS[id] });
+          generatedHints.push({ id, cell: cellB, text: HINT_TEXTS[id] });
+        }
+
+        setLevelTwoHintCells(generatedHints);
+
+        const bombs = randomManyCellsAvoiding(
+          level.cols,
+          level.rows,
+          blockedForHints,
+          bombCount
+        );
+        setBombCells(bombs);
+      } else if (currentLevel === 3) {
+        const blocked = getLevelThreeBlocked(level.cols, level.rows);
+        const nextTreasure = randomCellAvoiding(level.cols, level.rows, blocked);
+        setTreasure(nextTreasure);
+
+        const blockedWithTreasure = new Set(blocked);
+        blockedWithTreasure.add(cellKey(nextTreasure));
+
+        const lockCell = randomCellAvoiding(level.cols, level.rows, blockedWithTreasure);
+        setLevelThreeLockCell(lockCell);
+        setLevelOneKeyCells([]);
+        setLevelTwoHintCells([]);
+
+        const blockedForBombs = new Set(blockedWithTreasure);
+        blockedForBombs.add(cellKey(lockCell));
+
+        const bombs = randomManyCellsAvoiding(
+          level.cols,
+          level.rows,
+          blockedForBombs,
+          bombCount
+        );
+        setBombCells(bombs);
+      } else {
+        setTreasure(null);
+        setLevelOneKeyCells([]);
+        setLevelThreeLockCell(null);
+        setBombCells([]);
+        setLevelTwoHintCells([]);
+      }
+    }
+
+    startTimers();
+    touchInteraction();
+  }, [
+    currentLevel,
+    boardSeed,
+    level.cols,
+    level.rows,
+    level.secretType,
+  ]);
+
+  useEffect(() => {
+    startTimers();
+    const now = Date.now();
+    lastInteractionRef.current = now;
+    lastKnockRef.current = now;
+  }, []);
+
+  useEffect(() => {
+    if (mainGameFinished || gameFinished || finalCelebration || gameOver) return;
+
+    const interval = setInterval(() => {
+      if (!totalTimerStartedRef.current) return;
+
+      const elapsed = Math.floor((Date.now() - totalTimerStartedRef.current) / 1000);
+      setTotalElapsed(elapsed);
+
+      if (!level.isSecret && elapsed >= SLEEP_LIMIT_SECONDS) {
+        setTotalElapsed(SLEEP_LIMIT_SECONDS);
+        setSleepMode(true);
+        setHint("");
+        setStatusMessage("VOLTE QUANDO ACORDAR.");
+
+        if (!hasReward("slow")) {
+          addReward("slow");
+        }
+
+        totalTimerStartedRef.current = null;
+      }
+    }, 250);
+
+    return () => clearInterval(interval);
+  }, [mainGameFinished, gameFinished, finalCelebration, gameOver, sleepMode, level.isSecret]);
+
+  useEffect(() => {
+    if (sleepMode || mainGameFinished || gameFinished || finalCelebration || gameOver) return;
+
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const idleFor = now - lastInteractionRef.current;
+      const sinceLastKnock = now - lastKnockRef.current;
+
+      if (idleFor >= IDLE_KNOCK_MS && sinceLastKnock >= IDLE_KNOCK_MS) {
+        flashIdle("TOC TOC", 1000);
+        lastKnockRef.current = now;
+      }
+    }, 500);
+
+    return () => clearInterval(interval);
+  }, [sleepMode, mainGameFinished, gameFinished, finalCelebration, gameOver]);
+
+  useEffect(() => {
+    if (
+      level.secretType !== "boss" ||
+      found ||
+      gameFinished ||
+      sleepMode ||
+      finalCelebration ||
+      gameOver ||
+      clicks >= MAX_CLICKS
+    ) {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      const last = lastBossActionRef.current;
+      if (!last) return;
+
+      const diff = Date.now() - last;
+      if (diff >= 5000) {
+        setClicks((prev) => {
+          if (prev >= MAX_CLICKS) return prev;
+          return prev + 1;
+        });
+        flashStatus("Tomou dano do boss. -1 chance.");
+        lastBossActionRef.current = Date.now();
+      }
+    }, 250);
+
+    return () => clearInterval(interval);
+  }, [level.secretType, found, gameFinished, sleepMode, finalCelebration, gameOver, clicks]);
+
+  useEffect(() => {
+    return () => {
+      if (signalTimeoutRef.current) window.clearTimeout(signalTimeoutRef.current);
+      if (idleTimeoutRef.current) window.clearTimeout(idleTimeoutRef.current);
+      if (statusTimeoutRef.current) window.clearTimeout(statusTimeoutRef.current);
+    };
+  }, []);
+
+  function handleTitleClick() {
+    if (finalCelebration) return;
+    if (currentLevel !== 1) return;
+    if (clickedCells.length > 0 || clicks > 0) return;
+
+    touchInteraction();
+
+    const next = titleClicks + 1;
+    setTitleClicks(next);
+
+    if (next >= 10 && !trollMode) {
+      setTrollMode(true);
+      flashStatus("Modo troll ativado. As dicas agora mentem.");
+    }
+  }
+
+  function handleFinalBoardClick(row: number, col: number) {
+    const key = `${col}-${row}`;
+    if (finalClickedCells.includes(key)) return;
+    setFinalClickedCells((prev) => [...prev, key]);
+  }
+
+  function handleHintCardClick(id: HintEnvelopeId) {
+    flashStatus(HINT_TEXTS[id], 2000);
+  }
+
+  function maybeHandleSixNine(levelId: number, cell: Cell) {
+    if (levelId < 1 || levelId > 3) return false;
+    if (sixNineDone.includes(levelId)) return false;
+
+    const step = sixNineProgress[levelId];
+    const isSixth = cell.col === 5 && cell.row === 0;
+    const isNinth = cell.col === 8 && cell.row === 0;
+
+    if (isSixth && step === 0) {
+      setSixNineProgress((prev) => ({ ...prev, [levelId]: 1 }));
+      return false;
+    }
+
+    if (isNinth && step === 1) {
+      const messages: Record<number, string> = {
+        1: "eu sei o que voce procura!",
+        2: "seu safadinho, nao tem nada aqui!",
+        3: "esse conteudo foi removido em virtude da lei felca de 2026.",
+      };
+
+      setSixNineDone((prev) => [...prev, levelId]);
+      setSixNineProgress((prev) => ({ ...prev, [levelId]: 0 }));
+      flashStatus(messages[levelId], 2000);
+      return true;
+    }
+
+    if (!isSixth && !isNinth) {
+      setSixNineProgress((prev) => ({ ...prev, [levelId]: 0 }));
+    } else if (isNinth && step === 0) {
+      setSixNineProgress((prev) => ({ ...prev, [levelId]: 0 }));
+    }
+
+    return false;
+  }
+
+  function handleClick(cell: Cell) {
+    if (
+      !treasure ||
+      found ||
+      gameFinished ||
+      sleepMode ||
+      finalCelebration ||
+      gameOver ||
+      clicks >= MAX_CLICKS
+    ) {
+      return;
+    }
+
+    touchInteraction();
+
+    if (level.secretType === "heart" && !isHeartCell(cell.row, cell.col, level.rows, level.cols)) return;
+    if (level.secretType === "boss" && !isSkullCell(cell.row, cell.col, level.rows, level.cols)) return;
+    if (level.secretType === "alien" && !isAlienCell(cell.row, cell.col, level.rows, level.cols)) return;
+    if (level.secretType === "ace" && !isSpadeCell(cell.row, cell.col, level.rows, level.cols)) return;
+
+    const key = `${cell.col}-${cell.row}`;
+
+    const clickedLock =
+      currentLevel === 3 &&
+      hasKey &&
+      !giftUnlocked &&
+      !!levelThreeLockCell &&
+      cell.col === levelThreeLockCell.col &&
+      cell.row === levelThreeLockCell.row;
+
+    if (clickedCells.includes(key) && !clickedLock) {
+      flashStatus("Isso não vai funcionar… mas continua tentando (TDAH).");
+      return;
+    }
+
+    const triggeredSecretMessage = maybeHandleSixNine(currentLevel, cell);
+
+    const clickedBomb = bombCells.some(
+      (bomb) => bomb.col === cell.col && bomb.row === cell.row
+    );
+
+    if (clickedBomb) {
+      setClickedCells((prev) => [...prev, key]);
+      setGameOver(true);
+      setHint("");
+      setStatusMessage("GAME OVER");
+      stopTotalTimer();
+      return;
+    }
+
+    if (level.secretType === "boss") {
+      lastBossActionRef.current = Date.now();
+    }
+
+    if (currentLevel === 2) {
+      const envelope = levelTwoHintCells.find(
+        (item) => item.cell.col === cell.col && item.cell.row === cell.row
+      );
+
+      if (envelope) {
+        if (!foundHintCards.includes(envelope.id)) {
+          setFoundHintCards((prev) => [...prev, envelope.id]);
+          setLevelTwoHintCells((prev) => prev.filter((item) => item.id !== envelope.id));
+        }
+
+        flashStatus(envelope.text, 2000);
+
+        const distance = Math.abs(cell.col - treasure.col) + Math.abs(cell.row - treasure.row);
+        setClickedCells((prev) => [...prev, key]);
+        setHint(getDirection(cell, treasure, level.cols, level.rows, trollMode));
+        setClicks((c) => c + 1);
+
+        if (!triggeredSecretMessage && clicks + 1 >= MAX_CLICKS && distance === 1) {
+          flashStatus("Era literalmente ao lado…", 2200);
+        }
+        return;
+      }
+    }
+
+    if (currentLevel === 1 && !hasKey && levelOneKeyCells.length > 0) {
+      const clickedKey = levelOneKeyCells.find(
+        (keyCell) => keyCell.col === cell.col && keyCell.row === cell.row
+      );
+
+      if (clickedKey) {
+        setHasKey(true);
+        setRevealedKeyCell(clickedKey);
+        setLevelOneKeyCells([]);
+        setClickedCells((prev) => [...prev, key]);
+
+        const distance = Math.abs(cell.col - treasure.col) + Math.abs(cell.row - treasure.row);
+        const nextClicks = clicks + 1;
+
+        if (!triggeredSecretMessage && nextClicks >= MAX_CLICKS && distance === 1) {
+          flashStatus("Era literalmente ao lado…", 2200);
+        } else if (!triggeredSecretMessage) {
+          setStatusMessage("");
+        }
+
+        setHint(getDirection(cell, treasure, level.cols, level.rows, trollMode));
+        setClicks((c) => c + 1);
+        return;
+      }
+    }
+
+    if (clickedLock) {
+      setHasKey(false);
+      setGiftUnlocked(true);
+      setGiftOpenedThisRun(true);
+      setClickedCells((prev) => [...prev, key]);
+      addReward("gift");
+      flashSignal("CLICK", 1000);
+      flashStatus("Um presente foi liberado.", 1400);
+      setClicks((c) => c + 1);
+      return;
+    }
+
+    const clickedHeartSecretTrigger =
+      !level.isSecret &&
+      cell.col === level.cols - 1 &&
+      cell.row === level.rows - 1;
+
+    const clickedBossTrigger =
+      !level.isSecret &&
+      cell.col === 5 &&
+      cell.row === 0;
+
+    const clickedAlienStepOne =
+      currentLevel === 1 && cell.col === 4 && cell.row === 0;
+
+    const clickedAlienStepTwo =
+      currentLevel === 1 && cell.col === 0 && cell.row === 0;
+
+    const clickedAceTrigger =
+      !level.isSecret &&
+      cell.col === 0 &&
+      cell.row === 0;
+
+    if (clickedHeartSecretTrigger && !heartSecretProgress.includes(currentLevel)) {
+      const nextHeartSet = [...heartSecretProgress, currentLevel];
+      setHeartSecretProgress(nextHeartSet);
+
+      if (!heartSecretUnlocked) {
+        flashSignal("CLICK", 1000);
+      }
+
+      const completedHeart =
+        nextHeartSet.includes(1) &&
+        nextHeartSet.includes(2) &&
+        nextHeartSet.includes(3) &&
+        !heartSecretUnlocked;
+
+      if (completedHeart) {
+        setHeartSecretUnlocked(true);
+        setUnlockedLevels((prev) => (prev.includes(4) ? prev : [...prev, 4]));
+      }
+    }
+
+    if (clickedBossTrigger && !bossSecretProgress.includes(currentLevel)) {
+      const nextBossSet = [...bossSecretProgress, currentLevel];
+      setBossSecretProgress(nextBossSet);
+
+      if (!bossSecretUnlocked) {
+        flashSignal("CLICK", 1000);
+      }
+
+      const completedBoss =
+        nextBossSet.includes(1) &&
+        nextBossSet.includes(2) &&
+        nextBossSet.includes(3) &&
+        !bossSecretUnlocked;
+
+      if (completedBoss) {
+        setBossSecretUnlocked(true);
+        setUnlockedLevels((prev) => (prev.includes(5) ? prev : [...prev, 5]));
+      }
+    }
+
+    if (!alienSecretUnlocked && currentLevel === 1) {
+      if (clickedAlienStepOne && alienSequenceStep === 0) {
+        setAlienSequenceStep(1);
+        flashSignal("CLICK", 1000);
+      } else if (clickedAlienStepTwo && alienSequenceStep === 1) {
+        setAlienSequenceStep(2);
+        setAlienSecretUnlocked(true);
+        setUnlockedLevels((prev) => (prev.includes(6) ? prev : [...prev, 6]));
+        flashSignal("CLICK", 1000);
+      } else if (!clickedAlienStepOne && !clickedAlienStepTwo) {
+        setAlienSequenceStep(0);
+      } else if (clickedAlienStepTwo && alienSequenceStep === 0) {
+        setAlienSequenceStep(0);
+      }
+    }
+
+    if (clickedAceTrigger && !aceSecretProgress.includes(currentLevel)) {
+      const nextAceSet = [...aceSecretProgress, currentLevel];
+      setAceSecretProgress(nextAceSet);
+
+      if (!aceSecretUnlocked) {
+        flashSignal("CLICK", 1000);
+      }
+
+      const completedAce =
+        nextAceSet.includes(1) &&
+        nextAceSet.includes(2) &&
+        nextAceSet.includes(3) &&
+        !aceSecretUnlocked;
+
+      if (completedAce) {
+        setAceSecretUnlocked(true);
+        setUnlockedLevels((prev) => (prev.includes(7) ? prev : [...prev, 7]));
+      }
+    }
+
+    const hit = cell.col === treasure.col && cell.row === treasure.row;
+    const distance = Math.abs(cell.col - treasure.col) + Math.abs(cell.row - treasure.row);
+
+    setClickedCells((prev) => [...prev, key]);
+
+    if (hit) {
+      setFound(true);
+      setHint("");
+      setStatusMessage("");
+
+      if (currentLevel < 3) {
+        const nextLevel = currentLevel + 1;
+        setUnlockedLevels((prev) =>
+          prev.includes(nextLevel) ? prev : [...prev, nextLevel]
+        );
+      } else if (currentLevel === 3) {
+        stopTotalTimer();
+        setMainGameFinished(true);
+
+        if (totalElapsed < 10 && !hasReward("speed")) {
+          addReward("speed");
+        }
+
+        if (trollMode && totalElapsed < 60 && !hasReward("brain")) {
+          addReward("brain");
+        }
+      } else if (currentLevel === 4) {
+        addReward("heart");
+        setGameFinished(true);
+      } else if (currentLevel === 5) {
+        addReward("boss");
+        setGameFinished(true);
+      } else if (currentLevel === 6) {
+        addReward("alien");
+        setGameFinished(true);
+      } else if (currentLevel === 7) {
+        addReward("ace");
+        setGameFinished(true);
+      }
+    } else {
+      const nextClicks = clicks + 1;
+
+      if (triggeredSecretMessage) {
+        // mantém a mensagem secreta visível
+      } else if (nextClicks >= MAX_CLICKS && distance === 1) {
+        flashStatus("Era literalmente ao lado…", 2200);
+      } else if (level.secretType === "boss" && nextClicks >= 3) {
+        flashStatus("Você está procurando… ou sendo observado?", 1800);
+      } else {
+        setStatusMessage("");
+      }
+
+      setHint(getDirection(cell, treasure, level.cols, level.rows, trollMode));
+    }
+
+    setClicks((c) => c + 1);
+  }
+
+  function goToLevel(levelId: number) {
+    if (!unlockedLevels.includes(levelId)) return;
+    if (levelId >= 4 && !mainGameFinished) return;
+    if (finalCelebration || gameOver) return;
+
+    touchInteraction();
+    setCurrentLevel(levelId);
+  }
+
+  function goToNextLevel() {
+    if (currentLevel < 3 && unlockedLevels.includes(currentLevel + 1)) {
+      touchInteraction();
+      setCurrentLevel(currentLevel + 1);
+    }
+  }
+
+  async function handleShare() {
+    touchInteraction();
+
+    if (finalCelebration) {
+      const finalGrid = FIM_PATTERN.map((line, row) =>
+        line
+          .split("")
+          .map((value, col) => {
+            const key = `${col}-${row}`;
+            const clicked = finalClickedCells.includes(key);
+
+            if (clicked) return FIREWORKS[(row + col) % FIREWORKS.length];
+            return value === "1" ? "🟨" : "⬛";
+          })
+          .join("")
+      ).join("\n");
+
+      const rewardsLine =
+        collectedRewards.length > 0
+          ? `\n${collectedRewards.map((reward) => reward.emoji).join(" ")}`
+          : "";
+
+      const respectLine = hasReward("speed")
+        ? `\nvoce tem o meu respeito. DEV`
+        : "";
+
+      const totalLine = `\nvc chegou aqui em ${formatTime(totalElapsed)}`;
+
+      const text = `Encontre o Fim FIM
+
+Você reuniu os segredos. Agora é só celebrar e compartilhar.${totalLine}${respectLine}${rewardsLine}
+
+${finalGrid}
+
+${SHARE_LINK}`;
+
+      try {
+        if (navigator.share) {
+          await navigator.share({
+            title: "Encontre o Fim",
+            text,
+          });
+        } else {
+          await navigator.clipboard.writeText(text);
+          setShareMessage("Resultado copiado para a área de transferência.");
+          setTimeout(() => setShareMessage(""), 2500);
+        }
+      } catch {
+        setShareMessage("Não foi possível compartilhar agora.");
+        setTimeout(() => setShareMessage(""), 2500);
+      }
+
+      return;
+    }
+
+    const result = found ? `${clicks}/${MAX_CLICKS}` : `X/${MAX_CLICKS}`;
+
+    const grid = Array.from({ length: level.rows }, (_, row) =>
+      Array.from({ length: level.cols }, (_, col) => {
+        const key = `${col}-${row}`;
+        const clicked = clickedCells.includes(key);
+        const isTreasure =
+          treasure && col === treasure.col && row === treasure.row;
+        const isBomb = bombCells.some((bomb) => bomb.col === col && bomb.row === row);
+
+        if (gameOver && isBomb) return "💣";
+
+        if (found && isTreasure) {
+          if (level.secretType === "heart") return "❤️";
+          if (level.secretType === "boss") return "💀";
+          if (level.secretType === "alien") return "👽";
+          if (level.secretType === "ace") return "♠️";
+          return "🟨";
+        }
+
+        if (
+          currentLevel === 3 &&
+          hasKey &&
+          !giftUnlocked &&
+          levelThreeLockCell &&
+          col === levelThreeLockCell.col &&
+          row === levelThreeLockCell.row
+        ) {
+          return "🔒";
+        }
+
+        if (
+          currentLevel === 3 &&
+          giftOpenedThisRun &&
+          levelThreeLockCell &&
+          col === levelThreeLockCell.col &&
+          row === levelThreeLockCell.row
+        ) {
+          return "🎁";
+        }
+
+        if (clicked) return "🟦";
+        return "⬛";
+      }).join("")
+    ).join("\n");
+
+    const timeLine = level.isSecret ? "" : `Tempo: ${formatTime(totalElapsed)}\n`;
+    const overLine = gameOver ? "GAME OVER\n" : "";
+
+    const text = `Encontre o Fim ${level.name} ${result}
+${overLine}${timeLine}
+${grid}
+
+${SHARE_LINK}`;
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: "Encontre o Fim",
+          text,
+        });
+      } else {
+        await navigator.clipboard.writeText(text);
+        setShareMessage("Resultado copiado para a área de transferência.");
+        setTimeout(() => setShareMessage(""), 2500);
+      }
+    } catch {
+      setShareMessage("Não foi possível compartilhar agora.");
+      setTimeout(() => setShareMessage(""), 2500);
+    }
+  }
+
+  const showTime = !level.isSecret && !finalCelebration;
+  const showHint =
+    !found &&
+    clicks < MAX_CLICKS &&
+    !gameFinished &&
+    !sleepMode &&
+    !finalCelebration &&
+    !gameOver &&
+    (level.isSecret || !mainGameFinished);
+
+  const showMainFinalMessage =
+    mainGameFinished &&
+    !finalCelebration &&
+    currentLevel !== 4 &&
+    currentLevel !== 5 &&
+    currentLevel !== 6 &&
+    currentLevel !== 7;
+
+  const visibleLevels = LEVELS.filter((lvl) => {
+    if (lvl.id <= 3) return true;
+    if (!mainGameFinished) return false;
+    if (lvl.id === 4) return heartSecretUnlocked;
+    if (lvl.id === 5) return bossSecretUnlocked;
+    if (lvl.id === 6) return alienSecretUnlocked;
+    if (lvl.id === 7) return aceSecretUnlocked;
+    return false;
+  });
+
+  const canShare = finalCelebration || found || clicks >= MAX_CLICKS || gameOver;
+  const lostBoss = level.secretType === "boss" && !found && clicks >= MAX_CLICKS;
+  const lostAlien = level.secretType === "alien" && !found && clicks >= MAX_CLICKS;
+  const lostAce = level.secretType === "ace" && !found && clicks >= MAX_CLICKS;
+  const bossDanger = level.secretType === "boss" && clicks >= 3;
+
+  return (
+    <main
+      className={`min-h-screen text-white flex flex-col items-center justify-center gap-6 p-6 relative overflow-hidden ${
+        level.secretType === "boss" ? "bg-black" : "bg-zinc-950"
+      }`}
+    >
+      <style jsx global>{`
+        @keyframes treasurePop {
+          0% {
+            transform: scale(0.2) rotate(-18deg);
+            opacity: 0;
+          }
+          60% {
+            transform: scale(1.18) rotate(8deg);
+            opacity: 1;
+          }
+          100% {
+            transform: scale(1) rotate(0deg);
+            opacity: 1;
+          }
+        }
+
+        @keyframes treasurePulse {
+          0%, 100% {
+            transform: scale(1);
+            box-shadow: 0 0 0 rgba(250, 204, 21, 0);
+          }
+          50% {
+            transform: scale(1.08);
+            box-shadow: 0 0 24px rgba(250, 204, 21, 0.45);
+          }
+        }
+
+        @keyframes heartPulse {
+          0%, 100% {
+            transform: scale(1);
+            box-shadow: 0 0 0 rgba(244, 63, 94, 0);
+          }
+          50% {
+            transform: scale(1.1);
+            box-shadow: 0 0 24px rgba(244, 63, 94, 0.5);
+          }
+        }
+
+        @keyframes bossPulse {
+          0%, 100% {
+            transform: scale(1);
+            box-shadow: 0 0 0 rgba(239, 68, 68, 0);
+          }
+          50% {
+            transform: scale(1.08);
+            box-shadow: 0 0 28px rgba(239, 68, 68, 0.65);
+          }
+        }
+
+        @keyframes alienPulse {
+          0%, 100% {
+            transform: scale(1);
+            box-shadow: 0 0 0 rgba(34, 197, 94, 0);
+          }
+          50% {
+            transform: scale(1.08);
+            box-shadow: 0 0 28px rgba(34, 197, 94, 0.55);
+          }
+        }
+
+        @keyframes acePulse {
+          0%, 100% {
+            transform: scale(1);
+            box-shadow: 0 0 0 rgba(255, 255, 255, 0);
+          }
+          50% {
+            transform: scale(1.08);
+            box-shadow: 0 0 28px rgba(255, 255, 255, 0.35);
+          }
+        }
+
+        @keyframes bossGlow {
+          0%, 100% {
+            filter: drop-shadow(0 0 0 rgba(239, 68, 68, 0));
+          }
+          50% {
+            filter: drop-shadow(0 0 12px rgba(239, 68, 68, 0.75));
+          }
+        }
+
+        @keyframes alienGlow {
+          0%, 100% {
+            filter: drop-shadow(0 0 0 rgba(34, 197, 94, 0));
+          }
+          50% {
+            filter: drop-shadow(0 0 12px rgba(34, 197, 94, 0.75));
+          }
+        }
+
+        @keyframes aceGlow {
+          0%, 100% {
+            filter: drop-shadow(0 0 0 rgba(255, 255, 255, 0));
+          }
+          50% {
+            filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.55));
+          }
+        }
+
+        @keyframes bossBackgroundPulse {
+          0%, 100% {
+            opacity: 0.18;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 0.38;
+            transform: scale(1.06);
+          }
+        }
+
+        @keyframes bossBackgroundPulseFast {
+          0%, 100% {
+            opacity: 0.28;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 0.52;
+            transform: scale(1.1);
+          }
+        }
+
+        @keyframes alienBackgroundPulse {
+          0%, 100% {
+            opacity: 0.16;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 0.34;
+            transform: scale(1.04);
+          }
+        }
+
+        @keyframes aceBackgroundPulse {
+          0%, 100% {
+            opacity: 0.12;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 0.28;
+            transform: scale(1.04);
+          }
+        }
+
+        @keyframes eyeBlink {
+          0%, 42%, 48%, 100% {
+            transform: scaleY(1);
+            opacity: 1;
+          }
+          45% {
+            transform: scaleY(0.12);
+            opacity: 0.85;
+          }
+        }
+
+        @keyframes teethChatter {
+          0%, 100% {
+            transform: translateY(0px);
+          }
+          25% {
+            transform: translateY(1px);
+          }
+          50% {
+            transform: translateY(-1px);
+          }
+          75% {
+            transform: translateY(1px);
+          }
+        }
+
+        @keyframes floatSignal {
+          0% {
+            transform: translateY(10px) scale(0.9);
+            opacity: 0;
+          }
+          20% {
+            transform: translateY(0px) scale(1);
+            opacity: 1;
+          }
+          80% {
+            transform: translateY(0px) scale(1);
+            opacity: 1;
+          }
+          100% {
+            transform: translateY(-8px) scale(1.03);
+            opacity: 0;
+          }
+        }
+
+        .treasure-pop {
+          animation: treasurePop 0.45s ease-out;
+        }
+
+        .treasure-pulse {
+          animation: treasurePulse 1.2s ease-in-out infinite;
+        }
+
+        .heart-pulse {
+          animation: heartPulse 1.2s ease-in-out infinite;
+        }
+
+        .boss-pulse {
+          animation: bossPulse 1.2s ease-in-out infinite;
+        }
+
+        .alien-pulse {
+          animation: alienPulse 1.2s ease-in-out infinite;
+        }
+
+        .ace-pulse {
+          animation: acePulse 1.2s ease-in-out infinite;
+        }
+
+        .boss-glow {
+          animation: bossGlow 1.6s ease-in-out infinite;
+        }
+
+        .alien-glow {
+          animation: alienGlow 1.6s ease-in-out infinite;
+        }
+
+        .ace-glow {
+          animation: aceGlow 1.8s ease-in-out infinite;
+        }
+
+        .boss-background-pulse {
+          animation: bossBackgroundPulse 2.4s ease-in-out infinite;
+        }
+
+        .boss-background-pulse-fast {
+          animation: bossBackgroundPulseFast 1.25s ease-in-out infinite;
+        }
+
+        .alien-background-pulse {
+          animation: alienBackgroundPulse 2.7s ease-in-out infinite;
+        }
+
+        .ace-background-pulse {
+          animation: aceBackgroundPulse 2.7s ease-in-out infinite;
+        }
+
+        .boss-eye {
+          animation: eyeBlink 3.2s ease-in-out infinite;
+          transform-origin: center;
+        }
+
+        .boss-teeth {
+          animation: teethChatter 0.18s ease-in-out infinite;
+        }
+
+        .signal-float {
+          animation: floatSignal 1s ease-out forwards;
+        }
+
+        .fim-pixel {
+          border-radius: 2px;
+          image-rendering: pixelated;
+        }
+      `}</style>
+
+      {level.secretType === "boss" && !finalCelebration && (
+        <>
+          <div className="absolute inset-0 bg-gradient-to-b from-red-950/10 via-red-900/10 to-black pointer-events-none" />
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div
+              className={`w-[90vw] h-[90vw] max-w-[900px] max-h-[900px] rounded-full bg-red-700/20 blur-3xl ${
+                bossDanger ? "boss-background-pulse-fast" : "boss-background-pulse"
+              }`}
+            />
+          </div>
+        </>
+      )}
+
+      {level.secretType === "alien" && !finalCelebration && (
+        <>
+          <div className="absolute inset-0 bg-gradient-to-b from-green-950/10 via-emerald-900/10 to-zinc-950 pointer-events-none" />
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="w-[90vw] h-[90vw] max-w-[900px] max-h-[900px] rounded-full bg-green-500/10 blur-3xl alien-background-pulse" />
+          </div>
+        </>
+      )}
+
+      {level.secretType === "ace" && !finalCelebration && (
+        <>
+          <div className="absolute inset-0 bg-gradient-to-b from-slate-800/10 via-zinc-900/10 to-black pointer-events-none" />
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="w-[90vw] h-[90vw] max-w-[900px] max-h-[900px] rounded-full bg-white/10 blur-3xl ace-background-pulse" />
+          </div>
+        </>
+      )}
+
+      {(signalMessage || idleMessage) && (
+        <div className="absolute top-8 left-1/2 -translate-x-1/2 z-30 pointer-events-none">
+          <div className="signal-float px-6 py-3 rounded-full bg-white/10 border border-white/20 backdrop-blur-md text-white text-2xl font-extrabold tracking-[0.35em]">
+            {signalMessage || idleMessage}
+          </div>
+        </div>
+      )}
+
+      <div className="relative z-10 w-full flex flex-col items-center gap-6">
+        <h1
+          onClick={handleTitleClick}
+          className="text-4xl font-bold cursor-pointer select-none"
+        >
+          {finalCelebration
+            ? "FIM"
+            : level.secretType === "heart"
+              ? "Fase Secreta"
+              : level.secretType === "boss"
+                ? "FINAL BOSS"
+                : level.secretType === "alien"
+                  ? "AREA 51"
+                  : level.secretType === "ace"
+                    ? "ACE"
+                    : "Encontre o Fim"}
+        </h1>
+
+        {!finalCelebration && (
+          <div className="flex gap-3 flex-wrap justify-center">
+            {visibleLevels.map((lvl) => {
+              const unlocked = unlockedLevels.includes(lvl.id);
+              const active = currentLevel === lvl.id;
+
+              return (
+                <button
+                  key={lvl.id}
+                  onClick={() => goToLevel(lvl.id)}
+                  disabled={!unlocked}
+                  className={`px-4 py-2 rounded-xl font-semibold transition border ${
+                    active
+                      ? lvl.secretType === "heart"
+                        ? "bg-rose-500 text-white border-rose-300"
+                        : lvl.secretType === "boss"
+                          ? "bg-red-600 text-white border-red-400"
+                          : lvl.secretType === "alien"
+                            ? "bg-green-600 text-white border-green-400"
+                            : lvl.secretType === "ace"
+                              ? "bg-white text-black border-zinc-300"
+                              : "bg-amber-400 text-black border-amber-300"
+                      : unlocked
+                        ? "bg-zinc-800 text-white border-zinc-700 hover:bg-zinc-700"
+                        : "bg-zinc-900 text-zinc-500 border-zinc-800 cursor-not-allowed"
+                  }`}
+                >
+                  {lvl.name} {!unlocked && "🔒"}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        <div className="text-center space-y-2 min-h-[240px]">
+          {!finalCelebration && <p className="text-xl font-semibold">{level.name}</p>}
+
+          {!finalCelebration && (
+            <p className="text-lg">Tentativas restantes: {MAX_CLICKS - clicks}</p>
+          )}
+
+          {showTime && <p className="text-lg">Tempo: {formatTime(totalElapsed)}</p>}
+
+          {!finalCelebration &&
+            level.secretType === "boss" &&
+            !found &&
+            clicks < MAX_CLICKS &&
+            !sleepMode &&
+            !gameOver && (
+              <p className="text-red-300 font-semibold boss-glow">
+                Você me encontrou, seu humano medíocre.
+              </p>
+            )}
+
+          {!finalCelebration &&
+            level.secretType === "alien" &&
+            !found &&
+            clicks < MAX_CLICKS &&
+            !sleepMode &&
+            !gameOver && (
+              <p className="text-green-300 font-semibold alien-glow">
+                Sinais detectados. Permaneça calmo, humano.
+              </p>
+            )}
+
+          {!finalCelebration &&
+            level.secretType === "ace" &&
+            !found &&
+            clicks < MAX_CLICKS &&
+            !sleepMode &&
+            !gameOver && (
+              <p className="text-zinc-200 font-semibold ace-glow">
+                A mesa foi aberta. Veja se você tem cartas para isso.
+              </p>
+            )}
+
+          {finalCelebration && (
+            <>
+              <p className="text-lg text-amber-300 font-semibold max-w-2xl">
+                Você reuniu os segredos. Agora é só celebrar e compartilhar.
+              </p>
+              <p className="text-zinc-200 font-semibold">
+                vc chegou aqui em {formatTime(totalElapsed)}
+              </p>
+              {hasReward("speed") && (
+                <p className="text-zinc-200 font-semibold">
+                  voce tem o meu respeito. DEV
+                </p>
+              )}
+            </>
+          )}
+
+          {statusMessage && (
+            <p
+              className={`text-lg font-semibold ${
+                sleepMode
+                  ? "text-amber-300 text-2xl"
+                  : gameOver
+                    ? "text-red-400 text-2xl"
+                    : "text-red-300"
+              }`}
+            >
+              {statusMessage}
+            </p>
+          )}
+
+          {showHint && !statusMessage && (
+            <p className="text-lg">
+              {level.secretType === "heart"
+                ? `Dica: ${hint || "Encontre o coração escondido"}`
+                : level.secretType === "boss"
+                  ? `Dica: ${hint || "Encontre a caveira escondida"}`
+                  : level.secretType === "alien"
+                    ? `Dica: ${hint || "Encontre o alien escondido"}`
+                    : level.secretType === "ace"
+                      ? `Dica: ${hint || "Encontre o ás escondido"}`
+                      : `Dica: ${hint || "Clique em algum bloco"}`}
+            </p>
+          )}
+
+          {!finalCelebration && found && !level.isSecret && !mainGameFinished && (
+            <p className="text-lg text-amber-300 font-semibold">
+              🎉 Você encontrou o tesouro!
+            </p>
+          )}
+
+          {showMainFinalMessage && (
+            <>
+              <p className="text-lg text-amber-300 font-semibold max-w-2xl">
+                {finalMessage}
+              </p>
+              <p className="text-green-400 text-xl font-semibold">
+                Tempo final: {formatTime(totalElapsed)}
+              </p>
+            </>
+          )}
+
+          {found && level.secretType === "heart" && !finalCelebration && (
+            <p className="text-lg text-rose-300 font-semibold max-w-2xl">
+              ❤️ Parabéns. Meu coração agora é seu!
+              <br />Dev
+            </p>
+          )}
+
+          {found && level.secretType === "boss" && !finalCelebration && (
+            <p className="text-lg text-red-300 font-semibold max-w-2xl boss-glow">
+              💀 Eu jamais pensei que seria derrotado por um insolente como você...
+              <br />Mas desta vez, você venceu.
+            </p>
+          )}
+
+          {found && level.secretType === "alien" && !finalCelebration && (
+            <p className="text-lg text-green-300 font-semibold max-w-2xl alien-glow">
+              👽 BUSQUE CONHECIMENTO...
+            </p>
+          )}
+
+          {found && level.secretType === "ace" && !finalCelebration && (
+            <p className="text-lg text-zinc-100 font-semibold max-w-2xl ace-glow">
+              ♠ Você puxou exatamente a carta certa.
+              <br />Hoje o baralho jogou a seu favor.
+            </p>
+          )}
+
+          {lostBoss && !finalCelebration && !gameOver && (
+            <p className="text-lg text-red-400 font-semibold max-w-2xl boss-glow">
+              💀 Volte para o seu Fortnite, seu verme.
+            </p>
+          )}
+
+          {lostAlien && !finalCelebration && !gameOver && (
+            <p className="text-lg text-green-300 font-semibold max-w-2xl alien-glow">
+              👽 Depois que eu roubar todas as vacas da Terra... volto para te abduzir.
+            </p>
+          )}
+
+          {lostAce && !finalCelebration && !gameOver && (
+            <p className="text-lg text-zinc-300 font-semibold max-w-2xl ace-glow">
+              ♠ Você blefou mal.
+              <br />A casa levou essa mão.
+            </p>
+          )}
+        </div>
+
+        {finalCelebration ? (
+          <div className="bg-zinc-950 border border-zinc-700 p-4 shadow-[0_0_40px_rgba(0,0,0,0.4)]">
+            <div
+              className="grid gap-[2px] max-w-full overflow-auto"
+              style={{ gridTemplateColumns: `repeat(${FIM_PATTERN[0].length}, ${FIM_CELL_SIZE}px)` }}
+            >
+              {FIM_PATTERN.flatMap((line, row) =>
+                line.split("").map((value, col) => {
+                  const key = `${col}-${row}`;
+                  const clicked = finalClickedCells.includes(key);
+                  const lit = value === "1";
+
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => handleFinalBoardClick(row, col)}
+                      className={`fim-pixel transition flex items-center justify-center border text-sm ${
+                        clicked
+                          ? "bg-zinc-100 text-black border-zinc-300"
+                          : lit
+                            ? "bg-amber-400 text-black border-amber-300"
+                            : "bg-zinc-900 text-white border-zinc-800 hover:bg-zinc-800"
+                      }`}
+                      style={{
+                        width: `${FIM_CELL_SIZE}px`,
+                        height: `${FIM_CELL_SIZE}px`,
+                      }}
+                    >
+                      {clicked ? FIREWORKS[(row + col) % FIREWORKS.length] : ""}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        ) : (
+          <div
+            className={`grid gap-2 p-3 rounded-2xl max-w-full overflow-auto ${
+              level.secretType === "boss"
+                ? "bg-gradient-to-b from-zinc-950 to-red-950/50 border border-red-900/50 shadow-[0_0_40px_rgba(127,29,29,0.25)]"
+                : level.secretType === "alien"
+                  ? "bg-gradient-to-b from-lime-900/20 to-emerald-950/40 border border-lime-400/20 shadow-[0_0_40px_rgba(132,204,22,0.18)]"
+                  : level.secretType === "ace"
+                    ? "bg-gradient-to-b from-zinc-900 to-zinc-950 border border-white/10 shadow-[0_0_40px_rgba(255,255,255,0.08)]"
+                    : "bg-zinc-900"
+            }`}
+            style={{ gridTemplateColumns: `repeat(${level.cols}, ${NORMAL_CELL_SIZE}px)` }}
+          >
+            {Array.from({ length: level.rows }).flatMap((_, row) =>
+              Array.from({ length: level.cols }).map((_, col) => {
+                const key = `${col}-${row}`;
+                const clicked = clickedCells.includes(key);
+                const isTreasure =
+                  found && treasure && col === treasure.col && row === treasure.row;
+                const isBomb = bombCells.some((bomb) => bomb.col === col && bomb.row === row);
+
+                const showCell =
+                  level.secretType === "heart"
+                    ? isHeartCell(row, col, level.rows, level.cols)
+                    : level.secretType === "boss"
+                      ? isSkullCell(row, col, level.rows, level.cols)
+                      : level.secretType === "alien"
+                        ? isAlienCell(row, col, level.rows, level.cols)
+                        : level.secretType === "ace"
+                          ? isSpadeCell(row, col, level.rows, level.cols)
+                          : true;
+
+                if (!showCell) {
+                  return (
+                    <div
+                      key={key}
+                      style={{ width: `${NORMAL_CELL_SIZE}px`, height: `${NORMAL_CELL_SIZE}px` }}
+                    />
+                  );
+                }
+
+                const isBossEye =
+                  level.secretType === "boss" &&
+                  isSkullEyeCell(row, col, level.rows, level.cols);
+
+                const isBossTeeth =
+                  level.secretType === "boss" &&
+                  isSkullTeethCell(row, col, level.rows, level.cols);
+
+                const isAlienEye =
+                  level.secretType === "alien" &&
+                  isAlienEyeCell(row, col, level.rows, level.cols);
+
+                const isAceStem =
+                  level.secretType === "ace" &&
+                  isSpadeStemCell(row, col, level.rows, level.cols);
+
+                const showLock =
+                  currentLevel === 3 &&
+                  hasKey &&
+                  !giftUnlocked &&
+                  !!levelThreeLockCell &&
+                  col === levelThreeLockCell.col &&
+                  row === levelThreeLockCell.row;
+
+                const showGift =
+                  currentLevel === 3 &&
+                  giftOpenedThisRun &&
+                  !!levelThreeLockCell &&
+                  col === levelThreeLockCell.col &&
+                  row === levelThreeLockCell.row;
+
+                const showFoundKey =
+                  currentLevel === 1 &&
+                  !!revealedKeyCell &&
+                  col === revealedKeyCell.col &&
+                  row === revealedKeyCell.row;
+
+                return (
+                  <button
+                    key={key}
+                    onClick={() => handleClick({ col, row })}
+                    className={`transition text-lg flex items-center justify-center ${
+                      gameOver && isBomb
+                        ? "bg-red-700 text-white border border-red-300"
+                        : isTreasure
+                          ? level.secretType === "heart"
+                            ? "bg-rose-500 text-white heart-pulse"
+                            : level.secretType === "boss"
+                              ? "bg-red-600 text-white boss-pulse border border-red-300"
+                              : level.secretType === "alien"
+                                ? "bg-lime-400 text-black alien-pulse border border-lime-200"
+                                : level.secretType === "ace"
+                                  ? "bg-white text-black ace-pulse border border-zinc-200"
+                                  : "bg-amber-400 text-black treasure-pulse"
+                          : clicked
+                            ? level.secretType === "heart"
+                              ? "bg-rose-700"
+                              : level.secretType === "boss"
+                                ? "bg-red-900 border border-red-700"
+                                : level.secretType === "alien"
+                                  ? "bg-green-900 border border-green-700"
+                                  : level.secretType === "ace"
+                                    ? "bg-zinc-700 border border-zinc-500"
+                                    : "bg-sky-700"
+                            : level.secretType === "heart"
+                              ? "bg-rose-900 hover:bg-rose-800"
+                              : level.secretType === "boss"
+                                ? isBossEye
+                                  ? `bg-zinc-950 hover:bg-zinc-900 border ${
+                                      clicks >= 3 ? "border-red-500/90 bg-red-950/25" : "border-red-700/70"
+                                    } boss-eye`
+                                  : isBossTeeth
+                                    ? `bg-zinc-900 hover:bg-zinc-800 border border-red-900/80 ${
+                                        lostBoss ? "boss-teeth" : ""
+                                      }`
+                                    : "bg-zinc-900 hover:bg-zinc-800 border border-red-950/70"
+                                : level.secretType === "alien"
+                                  ? isAlienEye
+                                    ? "bg-zinc-950 hover:bg-zinc-900 border border-lime-300/70 alien-glow"
+                                    : "bg-lime-600/85 hover:bg-lime-500/85 border border-lime-300/30"
+                                  : level.secretType === "ace"
+                                    ? isAceStem
+                                      ? "bg-zinc-800 hover:bg-zinc-700 border border-white/20"
+                                      : "bg-zinc-900 hover:bg-zinc-800 border border-white/10"
+                                    : "bg-zinc-700 hover:bg-zinc-600 rounded-lg"
+                    }`}
+                    style={{
+                      width: `${NORMAL_CELL_SIZE}px`,
+                      height: `${NORMAL_CELL_SIZE}px`,
+                      borderRadius: level.isSecret ? "999px" : "10px",
+                    }}
+                  >
+                    {gameOver && isBomb ? (
+                      "💣"
+                    ) : isTreasure ? (
+                      <span className="treasure-pop text-2xl">
+                        {level.secretType === "heart"
+                          ? "❤️"
+                          : level.secretType === "boss"
+                            ? "💀"
+                            : level.secretType === "alien"
+                              ? "👽"
+                              : level.secretType === "ace"
+                                ? "♠"
+                                : "💎"}
+                      </span>
+                    ) : showGift ? (
+                      "🎁"
+                    ) : showLock ? (
+                      "🔒"
+                    ) : showFoundKey ? (
+                      "🔑"
+                    ) : clicked ? (
+                      "•"
+                    ) : (
+                      ""
+                    )}
+                  </button>
+                );
+              })
+            )}
+          </div>
+        )}
+
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <button
+            onClick={resetGame}
+            className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white font-semibold px-5 py-3 rounded-xl transition"
+          >
+            Resetar partida
+          </button>
+
+          {canShare && (
+            <button
+              onClick={handleShare}
+              className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white font-semibold px-5 py-3 rounded-xl transition"
+            >
+              Compartilhar resultado
+            </button>
+          )}
+
+          {!finalCelebration && found && !mainGameFinished && !gameFinished && currentLevel < 3 && (
+            <button
+              onClick={goToNextLevel}
+              className="bg-amber-400 hover:bg-amber-300 text-black font-semibold px-5 py-3 rounded-xl transition"
+            >
+              Ir para o próximo nível
+            </button>
+          )}
+        </div>
+
+        {!finalCelebration && heartSecretUnlocked && mainGameFinished && currentLevel !== 4 && (
+          <button
+            onClick={() => setCurrentLevel(4)}
+            className="bg-rose-500 hover:bg-rose-400 text-white font-semibold px-5 py-3 rounded-xl transition"
+          >
+            Jogar fase secreta
+          </button>
+        )}
+
+        {!finalCelebration && bossSecretUnlocked && mainGameFinished && currentLevel !== 5 && (
+          <button
+            onClick={() => setCurrentLevel(5)}
+            className="bg-red-600 hover:bg-red-500 text-white font-semibold px-5 py-3 rounded-xl transition"
+          >
+            Enfrentar FINAL BOSS
+          </button>
+        )}
+
+        {!finalCelebration && alienSecretUnlocked && mainGameFinished && currentLevel !== 6 && (
+          <button
+            onClick={() => setCurrentLevel(6)}
+            className="bg-green-600 hover:bg-green-500 text-white font-semibold px-5 py-3 rounded-xl transition"
+          >
+            Entrar na AREA 51
+          </button>
+        )}
+
+        {!finalCelebration && aceSecretUnlocked && mainGameFinished && currentLevel !== 7 && (
+          <button
+            onClick={() => setCurrentLevel(7)}
+            className="bg-white hover:bg-zinc-200 text-black font-semibold px-5 py-3 rounded-xl transition"
+          >
+            Virar a carta ACE
+          </button>
+        )}
+
+        {!finalCelebration && trollMode && (
+          <p className="text-amber-300 text-sm">
+            Modo troll ativo: as dicas estão invertidas.
+          </p>
+        )}
+
+        {!finalCelebration && found && !mainGameFinished && !gameFinished && !level.isSecret && (
+          <p className="text-green-400 text-xl font-semibold">
+            Você venceu o {level.name}!
+          </p>
+        )}
+
+        {!finalCelebration && gameOver && (
+          <p className="text-red-400 text-xl font-semibold">
+            Você clicou em uma bomba.
+          </p>
+        )}
+
+        {!finalCelebration &&
+          !found &&
+          clicks >= MAX_CLICKS &&
+          !lostBoss &&
+          !lostAlien &&
+          !lostAce &&
+          !sleepMode &&
+          !gameOver && (
+            <p className="text-red-400 text-xl font-semibold">
+              Suas tentativas acabaram.
+            </p>
+          )}
+
+        {shareMessage && <p className="text-sm text-zinc-300">{shareMessage}</p>}
+
+        <div className="w-full max-w-5xl flex items-end justify-between gap-4">
+          <div className="min-h-[40px] min-w-[72px] px-3 py-2 rounded-xl border border-zinc-700 bg-zinc-900/80 flex items-center justify-start gap-2 text-2xl flex-wrap">
+            {hasKey && !giftUnlocked && <span title="Chave">🔑</span>}
+            {foundHintCards.map((id) => (
+              <button
+                key={id}
+                onClick={() => handleHintCardClick(id)}
+                className="text-2xl hover:scale-110 transition"
+                title="Ler dica"
+              >
+                {HINT_CARD_EMOJI[id]}
+              </button>
+            ))}
+          </div>
+
+          <div className="min-h-[40px] px-3 py-2 rounded-xl border border-zinc-700 bg-zinc-900/80 flex items-center justify-end gap-2 text-2xl min-w-[72px]">
+            {collectedRewards.map((reward) => (
+              <span key={reward.id}>{reward.emoji}</span>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <a
+        href={SHARE_LINK}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-3 left-1/2 -translate-x-1/2 text-[10px] sm:text-xs text-zinc-500/70 hover:text-zinc-300 transition tracking-[0.25em] uppercase z-40"
+      >
+        DEV
+      </a>
+    </main>
+  );
+}
