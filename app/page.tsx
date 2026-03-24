@@ -49,7 +49,6 @@ const SHARE_LINK = "https://linktr.ee/tiagooliva";
 const MAX_CLICKS = 5;
 const SLEEP_LIMIT_SECONDS = 33 * 60 + 33;
 const IDLE_KNOCK_MS = 33_000;
-const RANKING_STORAGE_KEY = "encontre-o-fim-ranking";
 const MESSAGE_MS = 3000;
 
 const LEVELS: LevelConfig[] = [
@@ -717,28 +716,53 @@ export default function Home() {
     });
   }
 
-  function handleSaveRanking() {
+  async function handleSaveRanking() {
     if (!playerName.trim() || rankingSaved) return;
 
-    const newEntry: RankingEntry = {
-      name: playerName.trim().slice(0, 12),
-      time: totalElapsed,
+    const newEntry = {
+      playerName: playerName.trim().slice(0, 12),
+      totalTime: totalElapsed,
       secrets: collectedRewards.map((reward) => reward.emoji),
     };
 
-    const updated = [...ranking.filter((entry) => entry.name !== "SYSTEM"), newEntry]
-      .sort((a, b) => a.time - b.time)
-      .slice(0, 9);
+    try {
+      const res = await fetch("/api/ranking", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(newEntry),
+      });
 
-    const finalRanking = [
-      { name: "SYSTEM", time: 9, secrets: ["💀", "👽", "♠️", "❤️"] },
-      ...updated,
-    ];
+      if (!res.ok) {
+        flashStatus("Erro ao salvar ranking.");
+        return;
+      }
 
-    setRanking(finalRanking);
-    localStorage.setItem(RANKING_STORAGE_KEY, JSON.stringify(finalRanking));
-    setRankingSaved(true);
-    flashStatus("Ranking salvo.");
+      setRankingSaved(true);
+      flashStatus("Ranking salvo.");
+
+      const rankingRes = await fetch("/api/ranking", { cache: "no-store" });
+
+      if (!rankingRes.ok) return;
+
+      const data = await rankingRes.json();
+
+      if (Array.isArray(data)) {
+        const formatted: RankingEntry[] = [
+          { name: "SYSTEM", time: 9, secrets: ["💀", "👽", "♠️", "❤️"] },
+          ...data.map((r: any) => ({
+            name: r.player_name,
+            time: r.total_time,
+            secrets: Array.isArray(r.secrets) ? r.secrets : [],
+          })),
+        ].slice(0, 10);
+
+        setRanking(formatted);
+      }
+    } catch {
+      flashStatus("Erro ao salvar ranking.");
+    }
   }
 
   function resetGame() {
@@ -821,22 +845,37 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const saved = localStorage.getItem(RANKING_STORAGE_KEY);
-
-    if (saved) {
+    async function loadRanking() {
       try {
-        const parsed = JSON.parse(saved) as RankingEntry[];
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setRanking(parsed);
+        const res = await fetch("/api/ranking", { cache: "no-store" });
+
+        if (!res.ok) {
+          setRanking(BASE_RANKING);
+          return;
+        }
+
+        const data = await res.json();
+
+        if (Array.isArray(data)) {
+          const formatted: RankingEntry[] = [
+            { name: "SYSTEM", time: 9, secrets: ["💀", "👽", "♠️", "❤️"] },
+            ...data.map((r: any) => ({
+              name: r.player_name,
+              time: r.total_time,
+              secrets: Array.isArray(r.secrets) ? r.secrets : [],
+            })),
+          ].slice(0, 10);
+
+          setRanking(formatted);
         } else {
           setRanking(BASE_RANKING);
         }
       } catch {
         setRanking(BASE_RANKING);
       }
-    } else {
-      setRanking(BASE_RANKING);
     }
+
+    loadRanking();
   }, []);
 
   useEffect(() => {
