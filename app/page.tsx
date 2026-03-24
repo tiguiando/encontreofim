@@ -49,7 +49,6 @@ const SHARE_LINK = "https://linktr.ee/tiagooliva";
 const MAX_CLICKS = 5;
 const SLEEP_LIMIT_SECONDS = 33 * 60 + 33;
 const IDLE_KNOCK_MS = 33_000;
-const NORMAL_CELL_SIZE = 46;
 const RANKING_STORAGE_KEY = "encontre-o-fim-ranking";
 const MESSAGE_MS = 3000;
 
@@ -581,6 +580,9 @@ export default function Home() {
   const [hasDie, setHasDie] = useState(false);
   const [dieUsed, setDieUsed] = useState(false);
 
+  const [viewportWidth, setViewportWidth] = useState(1200);
+  const [isMobile, setIsMobile] = useState(false);
+
   const totalTimerStartedRef = useRef<number | null>(null);
   const lastBossActionRef = useRef<number | null>(null);
   const lastInteractionRef = useRef<number>(Date.now());
@@ -604,6 +606,41 @@ export default function Home() {
     const withoutSystem = ranking.filter((entry) => entry.name !== "SYSTEM");
     return [{ name: "SYSTEM", time: 9, secrets: ["💀", "👽", "♠️", "❤️"] }, ...withoutSystem].slice(0, 10);
   }, [ranking]);
+
+  const boardGapClass = isMobile ? "gap-1" : "gap-2";
+  const boardPaddingClass = isMobile ? "p-2" : "p-3";
+  const finalBoardPaddingClass = isMobile ? "p-2" : "p-3";
+
+  const horizontalPadding = isMobile ? 24 : 80;
+  const boardGapPx = isMobile ? 4 : 8;
+
+  const responsiveCellSize = useMemo(() => {
+    const availableWidth = viewportWidth - horizontalPadding;
+    const totalGap = (level.cols - 1) * boardGapPx;
+    const raw = Math.floor((availableWidth - totalGap) / level.cols);
+
+    if (level === undefined) return isMobile ? 24 : 46;
+
+    if (finalCelebration) {
+      if (isMobile) return Math.max(16, Math.min(raw, 28));
+      return Math.max(24, Math.min(raw, 46));
+    }
+
+    if (isMobile) {
+      return Math.max(18, Math.min(raw, 32));
+    }
+
+    return Math.max(32, Math.min(raw, 46));
+  }, [viewportWidth, level.cols, boardGapPx, horizontalPadding, isMobile, finalCelebration, level]);
+
+  const finalCellSize = useMemo(() => {
+    const availableWidth = viewportWidth - horizontalPadding;
+    const totalGap = (FIM_PATTERN[0].length - 1) * boardGapPx;
+    const raw = Math.floor((availableWidth - totalGap) / FIM_PATTERN[0].length);
+
+    if (isMobile) return Math.max(16, Math.min(raw, 28));
+    return Math.max(24, Math.min(raw, 46));
+  }, [viewportWidth, horizontalPadding, boardGapPx, isMobile]);
 
   function hasReward(id: RewardId) {
     return collectedRewards.some((reward) => reward.id === id);
@@ -769,6 +806,19 @@ export default function Home() {
     lastInteractionRef.current = now;
     lastKnockRef.current = now;
   }
+
+  useEffect(() => {
+    function updateViewport() {
+      const width = window.innerWidth;
+      setViewportWidth(width);
+      setIsMobile(width < 768);
+    }
+
+    updateViewport();
+    window.addEventListener("resize", updateViewport);
+
+    return () => window.removeEventListener("resize", updateViewport);
+  }, []);
 
   useEffect(() => {
     const saved = localStorage.getItem(RANKING_STORAGE_KEY);
@@ -1124,13 +1174,9 @@ export default function Home() {
         if (clickedCells.includes(key)) continue;
 
         if (treasure && treasure.col === col && treasure.row === row) continue;
-
         if (bombCells.some((bomb) => bomb.col === col && bomb.row === row)) continue;
-
         if (levelTwoHintCells.some((item) => item.cell.col === col && item.cell.row === row)) continue;
-
         if (levelOneKeyCells.some((item) => item.col === col && item.row === row)) continue;
-
         if (dieCell && dieCell.col === col && dieCell.row === row) continue;
 
         if (
@@ -1661,7 +1707,7 @@ ${SHARE_LINK}`;
 
   return (
     <main
-      className={`min-h-screen text-white flex flex-col items-center justify-center gap-3 px-6 py-3 relative overflow-hidden ${
+      className={`min-h-screen text-white flex flex-col items-center justify-center gap-3 px-3 sm:px-6 py-3 relative overflow-hidden ${
         level.secretType === "boss" ? "bg-black" : "bg-zinc-950"
       }`}
     >
@@ -1950,27 +1996,27 @@ ${SHARE_LINK}`;
       )}
 
       {(signalMessage || idleMessage) && (
-        <div className="absolute top-8 left-1/2 -translate-x-1/2 z-30 pointer-events-none">
-          <div className="signal-float px-6 py-3 rounded-full bg-white/10 border border-white/20 backdrop-blur-md text-white text-lg sm:text-2xl font-extrabold tracking-[0.08em] sm:tracking-[0.18em] text-center">
+        <div className="absolute top-4 sm:top-8 left-1/2 -translate-x-1/2 z-30 pointer-events-none px-3">
+          <div className="signal-float px-4 sm:px-6 py-2 sm:py-3 rounded-full bg-white/10 border border-white/20 backdrop-blur-md text-white text-sm sm:text-2xl font-extrabold tracking-[0.04em] sm:tracking-[0.18em] text-center max-w-[92vw]">
             {signalMessage || idleMessage}
           </div>
         </div>
       )}
 
       {showRankingModal && !finalCelebration && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 backdrop-blur-sm p-3 sm:p-4">
           <div className="w-full max-w-2xl rounded-2xl border border-zinc-700 bg-zinc-900 text-zinc-100 shadow-2xl max-h-[85vh] overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800">
+            <div className="flex items-center justify-between px-4 sm:px-5 py-3 sm:py-4 border-b border-zinc-800">
               <div>
-                <p className="text-xs tracking-[0.3em] text-zinc-400 uppercase">
+                <p className="text-[10px] sm:text-xs tracking-[0.2em] sm:tracking-[0.3em] text-zinc-400 uppercase">
                   Você não está sozinho aqui...
                 </p>
-                <h2 className="text-xl font-bold mt-1">🏆 Ranking Global</h2>
+                <h2 className="text-lg sm:text-xl font-bold mt-1">🏆 Ranking Global</h2>
               </div>
 
               <button
                 onClick={() => setShowRankingModal(false)}
-                className="w-10 h-10 rounded-full bg-zinc-800 hover:bg-zinc-700 transition text-lg"
+                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-zinc-800 hover:bg-zinc-700 transition text-base sm:text-lg"
                 aria-label="Fechar ranking"
                 title="Fechar"
               >
@@ -1978,26 +2024,26 @@ ${SHARE_LINK}`;
               </button>
             </div>
 
-            <div className="p-4 space-y-2 text-sm overflow-y-auto max-h-[calc(85vh-88px)]">
+            <div className="p-3 sm:p-4 space-y-2 text-xs sm:text-sm overflow-y-auto max-h-[calc(85vh-88px)]">
               {displayRanking.map((entry, index) => (
                 <div
                   key={`${entry.name}-${index}`}
                   className="flex items-center justify-between px-3 py-3 rounded-xl bg-zinc-800 gap-3"
                 >
-                  <span className="font-medium min-w-[110px]">
+                  <span className="font-medium min-w-[90px] sm:min-w-[110px]">
                     #{index + 1} {entry.name}
                   </span>
 
-                  <span className="flex items-center gap-3 text-right ml-auto">
+                  <span className="flex items-center gap-2 sm:gap-3 text-right ml-auto">
                     <span className="font-mono">{formatTime(entry.time)}</span>
-                    <span className="min-w-[96px] text-right">{entry.secrets.join(" ")}</span>
+                    <span className="min-w-[72px] sm:min-w-[96px] text-right">{entry.secrets.join(" ")}</span>
                   </span>
                 </div>
               ))}
 
               <div className="flex items-center justify-between px-3 py-3 rounded-xl bg-yellow-500/10 text-yellow-300 border border-yellow-500/20 gap-3">
-                <span className="font-medium min-w-[110px]">#? YOU?</span>
-                <span className="flex items-center gap-3 ml-auto">
+                <span className="font-medium min-w-[90px] sm:min-w-[110px]">#? YOU?</span>
+                <span className="flex items-center gap-2 sm:gap-3 ml-auto">
                   <span className="font-mono">--:--</span>
                   <span>❓</span>
                 </span>
@@ -2010,7 +2056,7 @@ ${SHARE_LINK}`;
       <div className="relative z-10 w-full flex flex-col items-center gap-3">
         <h1
           onClick={handleTitleClick}
-          className="text-4xl font-bold cursor-pointer select-none"
+          className={`${isMobile ? "text-3xl" : "text-4xl"} font-bold cursor-pointer select-none text-center`}
         >
           {finalCelebration
             ? "FIM"
@@ -2026,7 +2072,7 @@ ${SHARE_LINK}`;
         </h1>
 
         {!finalCelebration && (
-          <div className="flex gap-3 flex-wrap justify-center">
+          <div className="flex gap-2 sm:gap-3 flex-wrap justify-center">
             {visibleLevels.map((lvl) => {
               const unlocked = unlockedLevels.includes(lvl.id);
               const active = currentLevel === lvl.id;
@@ -2036,7 +2082,9 @@ ${SHARE_LINK}`;
                   key={lvl.id}
                   onClick={() => goToLevel(lvl.id)}
                   disabled={!unlocked}
-                  className={`px-4 py-2 rounded-xl font-semibold transition border ${
+                  className={`font-semibold transition border ${
+                    isMobile ? "px-3 py-2 text-sm rounded-lg" : "px-4 py-2 rounded-xl"
+                  } ${
                     active
                       ? lvl.secretType === "heart"
                         ? "bg-rose-500 text-white border-rose-300"
@@ -2059,14 +2107,20 @@ ${SHARE_LINK}`;
           </div>
         )}
 
-        <div className="text-center space-y-1 min-h-[150px]">
-          {!finalCelebration && <p className="text-xl font-semibold">{level.name}</p>}
-
+        <div className={`text-center ${isMobile ? "space-y-1 min-h-[120px]" : "space-y-1 min-h-[150px]"}`}>
           {!finalCelebration && (
-            <p className="text-lg">Tentativas restantes: {MAX_CLICKS - clicks}</p>
+            <p className={isMobile ? "text-base font-semibold" : "text-xl font-semibold"}>
+              {level.name}
+            </p>
           )}
 
-          {showTime && <p className="text-lg">Tempo: {formatTime(totalElapsed)}</p>}
+          {!finalCelebration && (
+            <p className={isMobile ? "text-base" : "text-lg"}>
+              Tentativas restantes: {MAX_CLICKS - clicks}
+            </p>
+          )}
+
+          {showTime && <p className={isMobile ? "text-base" : "text-lg"}>Tempo: {formatTime(totalElapsed)}</p>}
 
           {!finalCelebration &&
             level.secretType === "boss" &&
@@ -2074,7 +2128,7 @@ ${SHARE_LINK}`;
             clicks < MAX_CLICKS &&
             !sleepMode &&
             !gameOver && (
-              <p className="text-red-300 font-semibold boss-glow">
+              <p className="text-red-300 font-semibold boss-glow text-sm sm:text-base">
                 Você me encontrou, seu humano medíocre.
               </p>
             )}
@@ -2085,7 +2139,7 @@ ${SHARE_LINK}`;
             clicks < MAX_CLICKS &&
             !sleepMode &&
             !gameOver && (
-              <p className="text-green-300 font-semibold alien-glow">
+              <p className="text-green-300 font-semibold alien-glow text-sm sm:text-base">
                 Sinais detectados. Permaneça calmo, humano.
               </p>
             )}
@@ -2096,21 +2150,21 @@ ${SHARE_LINK}`;
             clicks < MAX_CLICKS &&
             !sleepMode &&
             !gameOver && (
-              <p className="text-zinc-200 font-semibold ace-glow">
+              <p className="text-zinc-200 font-semibold ace-glow text-sm sm:text-base">
                 A mesa foi aberta. Veja se você tem cartas para isso.
               </p>
             )}
 
           {finalCelebration && (
             <>
-              <p className="text-lg text-amber-300 font-semibold max-w-2xl">
+              <p className="text-base sm:text-lg text-amber-300 font-semibold max-w-2xl">
                 Você reuniu os segredos. Agora é só celebrar e compartilhar.
               </p>
-              <p className="text-zinc-200 font-semibold">
+              <p className="text-zinc-200 font-semibold text-sm sm:text-base">
                 vc chegou aqui em {formatTime(totalElapsed)}
               </p>
               {hasReward("speed") && (
-                <p className="text-zinc-200 font-semibold">
+                <p className="text-zinc-200 font-semibold text-sm sm:text-base">
                   voce tem o meu respeito. DEV
                 </p>
               )}
@@ -2119,12 +2173,12 @@ ${SHARE_LINK}`;
 
           {statusMessage && (
             <p
-              className={`text-lg font-semibold ${
+              className={`font-semibold ${
                 sleepMode
-                  ? "text-amber-300 text-2xl"
+                  ? "text-amber-300 text-xl sm:text-2xl"
                   : gameOver
-                    ? "text-red-400 text-2xl"
-                    : "text-red-300"
+                    ? "text-red-400 text-xl sm:text-2xl"
+                    : "text-red-300 text-base sm:text-lg"
               }`}
             >
               {statusMessage}
@@ -2132,7 +2186,7 @@ ${SHARE_LINK}`;
           )}
 
           {showHint && !statusMessage && (
-            <p className="text-lg">
+            <p className={isMobile ? "text-sm" : "text-lg"}>
               {level.secretType === "heart"
                 ? `Dica: ${hint || "Encontre o coração escondido"}`
                 : level.secretType === "boss"
@@ -2146,17 +2200,17 @@ ${SHARE_LINK}`;
           )}
 
           {!finalCelebration && found && !level.isSecret && !mainGameFinished && (
-            <p className="text-lg text-amber-300 font-semibold">
+            <p className="text-base sm:text-lg text-amber-300 font-semibold">
               🎉 Você encontrou o tesouro!
             </p>
           )}
 
           {showMainFinalMessage && (
             <>
-              <p className="text-lg text-amber-300 font-semibold max-w-2xl">
+              <p className="text-base sm:text-lg text-amber-300 font-semibold max-w-2xl">
                 {finalMessage}
               </p>
-              <p className="text-green-400 text-xl font-semibold">
+              <p className="text-green-400 text-lg sm:text-xl font-semibold">
                 Tempo final: {formatTime(totalElapsed)}
               </p>
 
@@ -2166,13 +2220,13 @@ ${SHARE_LINK}`;
                   onChange={(e) => setPlayerName(e.target.value)}
                   placeholder="Seu nome"
                   maxLength={12}
-                  className="px-3 py-2 rounded bg-zinc-800 border border-zinc-600 text-white text-center outline-none focus:border-amber-400"
+                  className="px-3 py-2 rounded bg-zinc-800 border border-zinc-600 text-white text-center outline-none focus:border-amber-400 text-sm sm:text-base"
                 />
 
                 <button
                   onClick={handleSaveRanking}
                   disabled={!playerName.trim() || rankingSaved}
-                  className={`px-4 py-2 rounded font-semibold transition ${
+                  className={`px-4 py-2 rounded font-semibold transition text-sm sm:text-base ${
                     !playerName.trim() || rankingSaved
                       ? "bg-zinc-700 text-zinc-400 cursor-not-allowed"
                       : "bg-amber-400 hover:bg-amber-300 text-black"
@@ -2185,46 +2239,46 @@ ${SHARE_LINK}`;
           )}
 
           {found && level.secretType === "heart" && !finalCelebration && (
-            <p className="text-lg text-rose-300 font-semibold max-w-2xl">
+            <p className="text-base sm:text-lg text-rose-300 font-semibold max-w-2xl">
               ❤️ Parabéns. Meu coração agora é seu!
               <br />Dev
             </p>
           )}
 
           {found && level.secretType === "boss" && !finalCelebration && (
-            <p className="text-lg text-red-300 font-semibold max-w-2xl boss-glow">
+            <p className="text-base sm:text-lg text-red-300 font-semibold max-w-2xl boss-glow">
               💀 Eu jamais pensei que seria derrotado por um insolente como você...
               <br />Mas desta vez, você venceu.
             </p>
           )}
 
           {found && level.secretType === "alien" && !finalCelebration && (
-            <p className="text-lg text-green-300 font-semibold max-w-2xl alien-glow">
+            <p className="text-base sm:text-lg text-green-300 font-semibold max-w-2xl alien-glow">
               👽 BUSQUE CONHECIMENTO...
             </p>
           )}
 
           {found && level.secretType === "ace" && !finalCelebration && (
-            <p className="text-lg text-zinc-100 font-semibold max-w-2xl ace-glow">
+            <p className="text-base sm:text-lg text-zinc-100 font-semibold max-w-2xl ace-glow">
               ♠ Você puxou exatamente a carta certa.
               <br />Hoje o baralho jogou a seu favor.
             </p>
           )}
 
           {lostBoss && !finalCelebration && !gameOver && (
-            <p className="text-lg text-red-400 font-semibold max-w-2xl boss-glow">
+            <p className="text-base sm:text-lg text-red-400 font-semibold max-w-2xl boss-glow">
               💀 Volte para o seu Fortnite, seu verme.
             </p>
           )}
 
           {lostAlien && !finalCelebration && !gameOver && (
-            <p className="text-lg text-green-300 font-semibold max-w-2xl alien-glow">
+            <p className="text-base sm:text-lg text-green-300 font-semibold max-w-2xl alien-glow">
               👽 Depois que eu roubar todas as vacas da Terra... volto para te abduzir.
             </p>
           )}
 
           {lostAce && !finalCelebration && !gameOver && (
-            <p className="text-lg text-zinc-300 font-semibold max-w-2xl ace-glow">
+            <p className="text-base sm:text-lg text-zinc-300 font-semibold max-w-2xl ace-glow">
               ♠ Você blefou mal.
               <br />A casa levou essa mão.
             </p>
@@ -2233,8 +2287,8 @@ ${SHARE_LINK}`;
 
         {finalCelebration ? (
           <div
-            className="grid gap-2 p-3 rounded-2xl max-w-full overflow-auto bg-zinc-900"
-            style={{ gridTemplateColumns: `repeat(${FIM_PATTERN[0].length}, ${NORMAL_CELL_SIZE}px)` }}
+            className={`grid ${boardGapClass} ${finalBoardPaddingClass} rounded-2xl max-w-full overflow-hidden bg-zinc-900`}
+            style={{ gridTemplateColumns: `repeat(${FIM_PATTERN[0].length}, ${finalCellSize}px)` }}
           >
             {FIM_PATTERN.flatMap((line, row) =>
               line.split("").map((value, col) => {
@@ -2246,7 +2300,7 @@ ${SHARE_LINK}`;
                   <button
                     key={key}
                     onClick={() => handleFinalBoardClick(row, col)}
-                    className={`transition text-lg flex items-center justify-center rounded-lg ${
+                    className={`transition ${isMobile ? "text-base" : "text-lg"} flex items-center justify-center rounded-lg ${
                       clicked
                         ? "bg-zinc-100 text-black border border-zinc-300"
                         : lit
@@ -2254,8 +2308,8 @@ ${SHARE_LINK}`;
                           : "bg-zinc-700 hover:bg-zinc-600 text-white"
                     }`}
                     style={{
-                      width: `${NORMAL_CELL_SIZE}px`,
-                      height: `${NORMAL_CELL_SIZE}px`,
+                      width: `${finalCellSize}px`,
+                      height: `${finalCellSize}px`,
                     }}
                   >
                     {clicked ? FIREWORKS[(row + col) % FIREWORKS.length] : ""}
@@ -2266,7 +2320,7 @@ ${SHARE_LINK}`;
           </div>
         ) : (
           <div
-            className={`grid gap-2 p-3 rounded-2xl max-w-full overflow-auto ${
+            className={`grid ${boardGapClass} ${boardPaddingClass} rounded-2xl max-w-full overflow-hidden ${
               level.secretType === "boss"
                 ? "bg-gradient-to-b from-zinc-950 to-red-950/50 border border-red-900/50 shadow-[0_0_40px_rgba(127,29,29,0.25)]"
                 : level.secretType === "alien"
@@ -2275,7 +2329,7 @@ ${SHARE_LINK}`;
                     ? "bg-gradient-to-b from-zinc-900 to-zinc-950 border border-white/10 shadow-[0_0_40px_rgba(255,255,255,0.08)]"
                     : "bg-zinc-900"
             }`}
-            style={{ gridTemplateColumns: `repeat(${level.cols}, ${NORMAL_CELL_SIZE}px)` }}
+            style={{ gridTemplateColumns: `repeat(${level.cols}, ${responsiveCellSize}px)` }}
           >
             {Array.from({ length: level.rows }).flatMap((_, row) =>
               Array.from({ length: level.cols }).map((_, col) => {
@@ -2291,7 +2345,7 @@ ${SHARE_LINK}`;
                   return (
                     <div
                       key={key}
-                      style={{ width: `${NORMAL_CELL_SIZE}px`, height: `${NORMAL_CELL_SIZE}px` }}
+                      style={{ width: `${responsiveCellSize}px`, height: `${responsiveCellSize}px` }}
                     />
                   );
                 }
@@ -2338,7 +2392,7 @@ ${SHARE_LINK}`;
                   <button
                     key={key}
                     onClick={() => handleClick({ col, row })}
-                    className={`transition text-lg flex items-center justify-center ${
+                    className={`transition ${isMobile ? "text-sm" : "text-lg"} flex items-center justify-center ${
                       gameOver && isBomb
                         ? "bg-red-700 text-white border border-red-300"
                         : isTreasure
@@ -2384,15 +2438,15 @@ ${SHARE_LINK}`;
                                     : "bg-zinc-700 hover:bg-zinc-600 rounded-lg"
                     }`}
                     style={{
-                      width: `${NORMAL_CELL_SIZE}px`,
-                      height: `${NORMAL_CELL_SIZE}px`,
+                      width: `${responsiveCellSize}px`,
+                      height: `${responsiveCellSize}px`,
                       borderRadius: level.isSecret ? "999px" : "10px",
                     }}
                   >
                     {gameOver && isBomb ? (
                       "💣"
                     ) : isTreasure ? (
-                      <span className="treasure-pop text-2xl">
+                      <span className={`treasure-pop ${isMobile ? "text-lg" : "text-2xl"}`}>
                         {level.secretType === "heart"
                           ? "❤️"
                           : level.secretType === "boss"
@@ -2424,7 +2478,9 @@ ${SHARE_LINK}`;
         <div className="flex flex-wrap items-center justify-center gap-2">
           <button
             onClick={resetGame}
-            className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white font-semibold px-5 py-3 rounded-xl transition"
+            className={`bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white font-semibold transition ${
+              isMobile ? "px-4 py-2 text-sm rounded-lg" : "px-5 py-3 rounded-xl"
+            }`}
           >
             Resetar partida
           </button>
@@ -2432,7 +2488,9 @@ ${SHARE_LINK}`;
           {canShare && (
             <button
               onClick={handleShare}
-              className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white font-semibold px-5 py-3 rounded-xl transition"
+              className={`bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white font-semibold transition ${
+                isMobile ? "px-4 py-2 text-sm rounded-lg" : "px-5 py-3 rounded-xl"
+              }`}
             >
               Compartilhar resultado
             </button>
@@ -2441,7 +2499,9 @@ ${SHARE_LINK}`;
           {!finalCelebration && found && !mainGameFinished && !gameFinished && currentLevel < 3 && (
             <button
               onClick={goToNextLevel}
-              className="bg-amber-400 hover:bg-amber-300 text-black font-semibold px-5 py-3 rounded-xl transition"
+              className={`bg-amber-400 hover:bg-amber-300 text-black font-semibold transition ${
+                isMobile ? "px-4 py-2 text-sm rounded-lg" : "px-5 py-3 rounded-xl"
+              }`}
             >
               Ir para o próximo nível
             </button>
@@ -2451,7 +2511,9 @@ ${SHARE_LINK}`;
         {!finalCelebration && heartSecretUnlocked && mainGameFinished && currentLevel !== 4 && (
           <button
             onClick={() => setCurrentLevel(4)}
-            className="bg-rose-500 hover:bg-rose-400 text-white font-semibold px-5 py-3 rounded-xl transition"
+            className={`bg-rose-500 hover:bg-rose-400 text-white font-semibold transition ${
+              isMobile ? "px-4 py-2 text-sm rounded-lg" : "px-5 py-3 rounded-xl"
+            }`}
           >
             Jogar fase secreta
           </button>
@@ -2460,7 +2522,9 @@ ${SHARE_LINK}`;
         {!finalCelebration && bossSecretUnlocked && mainGameFinished && currentLevel !== 5 && (
           <button
             onClick={() => setCurrentLevel(5)}
-            className="bg-red-600 hover:bg-red-500 text-white font-semibold px-5 py-3 rounded-xl transition"
+            className={`bg-red-600 hover:bg-red-500 text-white font-semibold transition ${
+              isMobile ? "px-4 py-2 text-sm rounded-lg" : "px-5 py-3 rounded-xl"
+            }`}
           >
             Enfrentar FINAL BOSS
           </button>
@@ -2469,7 +2533,9 @@ ${SHARE_LINK}`;
         {!finalCelebration && alienSecretUnlocked && mainGameFinished && currentLevel !== 6 && (
           <button
             onClick={() => setCurrentLevel(6)}
-            className="bg-green-600 hover:bg-green-500 text-white font-semibold px-5 py-3 rounded-xl transition"
+            className={`bg-green-600 hover:bg-green-500 text-white font-semibold transition ${
+              isMobile ? "px-4 py-2 text-sm rounded-lg" : "px-5 py-3 rounded-xl"
+            }`}
           >
             Entrar na AREA 51
           </button>
@@ -2478,26 +2544,28 @@ ${SHARE_LINK}`;
         {!finalCelebration && aceSecretUnlocked && mainGameFinished && currentLevel !== 7 && (
           <button
             onClick={() => setCurrentLevel(7)}
-            className="bg-white hover:bg-zinc-200 text-black font-semibold px-5 py-3 rounded-xl transition"
+            className={`bg-white hover:bg-zinc-200 text-black font-semibold transition ${
+              isMobile ? "px-4 py-2 text-sm rounded-lg" : "px-5 py-3 rounded-xl"
+            }`}
           >
             Virar a carta ACE
           </button>
         )}
 
         {!finalCelebration && trollMode && (
-          <p className="text-amber-300 text-sm">
+          <p className="text-amber-300 text-xs sm:text-sm">
             Modo troll ativo: as dicas estão invertidas. CORRA!!!
           </p>
         )}
 
         {!finalCelebration && found && !mainGameFinished && !gameFinished && !level.isSecret && (
-          <p className="text-green-400 text-xl font-semibold">
+          <p className="text-green-400 text-lg sm:text-xl font-semibold">
             Você venceu o {level.name}!
           </p>
         )}
 
         {!finalCelebration && gameOver && (
-          <p className="text-red-400 text-xl font-semibold">
+          <p className="text-red-400 text-lg sm:text-xl font-semibold">
             Você clicou em uma bomba.
           </p>
         )}
@@ -2510,21 +2578,25 @@ ${SHARE_LINK}`;
           !lostAce &&
           !sleepMode &&
           !gameOver && (
-            <p className="text-red-400 text-xl font-semibold">
+            <p className="text-red-400 text-lg sm:text-xl font-semibold">
               Suas tentativas acabaram.
             </p>
           )}
 
-        {shareMessage && <p className="text-sm text-zinc-300">{shareMessage}</p>}
+        {shareMessage && <p className="text-xs sm:text-sm text-zinc-300">{shareMessage}</p>}
 
         <div className="w-full max-w-5xl flex items-end justify-between gap-3">
-          <div className="min-h-[40px] min-w-[72px] px-3 py-2 rounded-xl border border-zinc-700 bg-zinc-900/80 flex items-center justify-start gap-2 text-2xl flex-wrap">
+          <div
+            className={`rounded-xl border border-zinc-700 bg-zinc-900/80 flex items-center justify-start gap-2 flex-wrap ${
+              isMobile ? "min-h-[34px] px-2 py-1 text-xl min-w-[64px]" : "min-h-[40px] min-w-[72px] px-3 py-2 text-2xl"
+            }`}
+          >
             {hasKey && !giftUnlocked && <span title="Chave">🔑</span>}
 
             {hasDie && !dieUsed && (
               <button
                 onClick={handleRollDie}
-                className="text-2xl hover:scale-110 transition"
+                className="hover:scale-110 transition"
                 title="Rolar dado"
               >
                 🎲
@@ -2535,7 +2607,7 @@ ${SHARE_LINK}`;
               <button
                 key={`${id}-${index}`}
                 onClick={() => handleHintCardClick(id)}
-                className="text-2xl hover:scale-110 transition"
+                className="hover:scale-110 transition"
                 title="Ler dica"
               >
                 {HINT_CARD_EMOJI[id]}
@@ -2543,7 +2615,11 @@ ${SHARE_LINK}`;
             ))}
           </div>
 
-          <div className="min-h-[40px] px-3 py-2 rounded-xl border border-zinc-700 bg-zinc-900/80 flex items-center justify-end gap-2 text-2xl min-w-[72px]">
+          <div
+            className={`rounded-xl border border-zinc-700 bg-zinc-900/80 flex items-center justify-end gap-2 ${
+              isMobile ? "min-h-[34px] px-2 py-1 text-xl min-w-[64px]" : "min-h-[40px] px-3 py-2 text-2xl min-w-[72px]"
+            }`}
+          >
             {collectedRewards.map((reward) => (
               <span key={reward.id}>{reward.emoji}</span>
             ))}
@@ -2554,7 +2630,9 @@ ${SHARE_LINK}`;
       {!finalCelebration && (
         <button
           onClick={() => setShowRankingModal(true)}
-          className="fixed bottom-10 left-1/2 -translate-x-1/2 z-40 w-11 h-11 rounded-full border border-zinc-700 bg-zinc-900/80 hover:bg-zinc-800 text-xl flex items-center justify-center transition shadow-lg"
+          className={`fixed left-1/2 -translate-x-1/2 z-40 rounded-full border border-zinc-700 bg-zinc-900/80 hover:bg-zinc-800 flex items-center justify-center transition shadow-lg ${
+            isMobile ? "bottom-9 w-10 h-10 text-lg" : "bottom-10 w-11 h-11 text-xl"
+          }`}
           title="Abrir ranking"
           aria-label="Abrir ranking"
         >
