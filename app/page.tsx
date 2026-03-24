@@ -52,6 +52,7 @@ const MAX_CLICKS = 5;
 const SLEEP_LIMIT_SECONDS = 33 * 60 + 33;
 const IDLE_KNOCK_MS = 33_000;
 const MESSAGE_MS = 3000;
+const SPEED_RUN_LIMIT_SECONDS = 60;
 
 const LEVELS: LevelConfig[] = [
   { id: 1, name: "Nível 1", cols: 10, rows: 6 },
@@ -583,6 +584,8 @@ export default function Home() {
   const [isMobile, setIsMobile] = useState(false);
 
   const sessionStartRef = useRef<number | null>(null);
+  const speedRunStartRef = useRef<number | null>(null);
+  const speedRunSequenceRef = useRef<number[]>([]);
   const lastBossActionRef = useRef<number | null>(null);
   const lastInteractionRef = useRef<number>(Date.now());
   const lastKnockRef = useRef<number>(Date.now());
@@ -643,6 +646,55 @@ export default function Home() {
   function startSessionTimer() {
     if (!sessionStartRef.current) {
       sessionStartRef.current = Date.now();
+    }
+  }
+
+  function resetSpeedRunSequence() {
+    speedRunStartRef.current = null;
+    speedRunSequenceRef.current = [];
+  }
+
+  function markSpeedRunProgress(levelCompleted: number) {
+    if (hasReward("speed")) return;
+    if (levelCompleted < 1 || levelCompleted > 3) return;
+
+    const now = Date.now();
+
+    if (levelCompleted === 1) {
+      speedRunStartRef.current = now;
+      speedRunSequenceRef.current = [1];
+      return;
+    }
+
+    if (!speedRunStartRef.current) {
+      resetSpeedRunSequence();
+      return;
+    }
+
+    const elapsed = Math.floor((now - speedRunStartRef.current) / 1000);
+    if (elapsed > SPEED_RUN_LIMIT_SECONDS) {
+      resetSpeedRunSequence();
+      return;
+    }
+
+    const sequence = speedRunSequenceRef.current;
+
+    if (levelCompleted === 2) {
+      if (sequence.length === 1 && sequence[0] === 1) {
+        speedRunSequenceRef.current = [1, 2];
+      } else {
+        resetSpeedRunSequence();
+      }
+      return;
+    }
+
+    if (levelCompleted === 3) {
+      if (sequence.length === 2 && sequence[0] === 1 && sequence[1] === 2) {
+        if (elapsed < SPEED_RUN_LIMIT_SECONDS) {
+          addReward("speed");
+        }
+      }
+      resetSpeedRunSequence();
     }
   }
 
@@ -807,6 +859,8 @@ export default function Home() {
     setDieCell(null);
     setHasDie(false);
     setDieUsed(false);
+
+    resetSpeedRunSequence();
 
     const now = Date.now();
     lastBossActionRef.current = now;
@@ -1500,12 +1554,10 @@ export default function Home() {
         setUnlockedLevels((prev) =>
           prev.includes(nextLevel) ? prev : [...prev, nextLevel]
         );
+        markSpeedRunProgress(currentLevel);
       } else if (currentLevel === 3) {
+        markSpeedRunProgress(3);
         setMainGameFinished(true);
-
-        if (totalElapsed < 60 && !hasReward("speed")) {
-          addReward("speed");
-        }
 
         if (trollMode && totalElapsed < 60 && !hasReward("brain")) {
           addReward("brain");
