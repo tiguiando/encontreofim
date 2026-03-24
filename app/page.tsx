@@ -610,15 +610,13 @@ export default function Home() {
   const boardPaddingClass = isMobile ? "p-2" : "p-3";
   const finalBoardPaddingClass = isMobile ? "p-2" : "p-3";
 
-  const horizontalPadding = isMobile ? 24 : 80;
+  const horizontalPadding = isMobile ? 20 : 80;
   const boardGapPx = isMobile ? 4 : 8;
 
   const responsiveCellSize = useMemo(() => {
     const availableWidth = viewportWidth - horizontalPadding;
     const totalGap = (level.cols - 1) * boardGapPx;
     const raw = Math.floor((availableWidth - totalGap) / level.cols);
-
-    if (level === undefined) return isMobile ? 24 : 46;
 
     if (finalCelebration) {
       if (isMobile) return Math.max(16, Math.min(raw, 28));
@@ -630,7 +628,7 @@ export default function Home() {
     }
 
     return Math.max(32, Math.min(raw, 46));
-  }, [viewportWidth, level.cols, boardGapPx, horizontalPadding, isMobile, finalCelebration, level]);
+  }, [viewportWidth, level.cols, boardGapPx, horizontalPadding, isMobile, finalCelebration]);
 
   const finalCellSize = useMemo(() => {
     const availableWidth = viewportWidth - horizontalPadding;
@@ -1746,9 +1744,10 @@ ${SHARE_LINK}`;
 
   return (
     <main
-      className={`min-h-screen text-white flex flex-col items-center justify-center gap-3 px-3 sm:px-6 py-3 relative overflow-hidden ${
+      className={`min-h-[100dvh] text-white flex flex-col items-center justify-start gap-3 px-3 sm:px-6 pt-2 pb-3 sm:pt-4 relative overflow-hidden ${
         level.secretType === "boss" ? "bg-black" : "bg-zinc-950"
       }`}
+      style={{ paddingTop: "max(env(safe-area-inset-top), 8px)" }}
     >
       <style jsx global>{`
         @keyframes treasurePop {
@@ -2035,7 +2034,7 @@ ${SHARE_LINK}`;
       )}
 
       {(signalMessage || idleMessage) && (
-        <div className="absolute top-4 sm:top-8 left-1/2 -translate-x-1/2 z-30 pointer-events-none px-3">
+        <div className="absolute top-3 sm:top-8 left-1/2 -translate-x-1/2 z-30 pointer-events-none px-3">
           <div className="signal-float px-4 sm:px-6 py-2 sm:py-3 rounded-full bg-white/10 border border-white/20 backdrop-blur-md text-white text-sm sm:text-2xl font-extrabold tracking-[0.04em] sm:tracking-[0.18em] text-center max-w-[92vw]">
             {signalMessage || idleMessage}
           </div>
@@ -2095,7 +2094,7 @@ ${SHARE_LINK}`;
       <div className="relative z-10 w-full flex flex-col items-center gap-3">
         <h1
           onClick={handleTitleClick}
-          className={`${isMobile ? "text-3xl" : "text-4xl"} font-bold cursor-pointer select-none text-center`}
+          className={`${isMobile ? "text-3xl" : "text-4xl"} font-bold cursor-pointer select-none text-center leading-tight`}
         >
           {finalCelebration
             ? "FIM"
@@ -2146,7 +2145,7 @@ ${SHARE_LINK}`;
           </div>
         )}
 
-        <div className={`text-center ${isMobile ? "space-y-1 min-h-[120px]" : "space-y-1 min-h-[150px]"}`}>
+        <div className={`text-center ${isMobile ? "space-y-1 min-h-[108px]" : "space-y-1 min-h-[150px]"}`}>
           {!finalCelebration && (
             <p className={isMobile ? "text-base font-semibold" : "text-xl font-semibold"}>
               {level.name}
