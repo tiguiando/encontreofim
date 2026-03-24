@@ -44,7 +44,7 @@ type RankingEntry = {
   secrets: string[];
 };
 
-const SHARE_LINK = "https://linktr.ee/tiagooliva";
+const SHARE_LINK = "https://www.youtube.com/@tiguiando?sub_confirmation=1&sub_confirmation=1";
 
 const MAX_CLICKS = 5;
 const SLEEP_LIMIT_SECONDS = 33 * 60 + 33;
