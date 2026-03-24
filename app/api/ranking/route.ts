@@ -6,9 +6,6 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-// ==========================
-// POST → salvar ranking
-// ==========================
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -17,20 +14,12 @@ export async function POST(req: Request) {
     const totalTime = Number(body.totalTime);
     const secrets = Array.isArray(body.secrets) ? body.secrets : [];
 
-    // validação nome
     if (!playerName) {
-      return NextResponse.json(
-        { error: "Nome inválido" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Nome inválido" }, { status: 400 });
     }
 
-    // validação tempo
     if (!Number.isFinite(totalTime) || totalTime < 0) {
-      return NextResponse.json(
-        { error: "Tempo inválido" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Tempo inválido" }, { status: 400 });
     }
 
     const { error } = await supabase.from("ranking").insert([
@@ -42,15 +31,11 @@ export async function POST(req: Request) {
     ]);
 
     if (error) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     return NextResponse.json({ ok: true });
-
-  } catch (err) {
+  } catch {
     return NextResponse.json(
       { error: "Erro ao salvar ranking" },
       { status: 500 }
@@ -58,22 +43,27 @@ export async function POST(req: Request) {
   }
 }
 
-// ==========================
-// GET → buscar ranking
-// ==========================
 export async function GET() {
   const { data, error } = await supabase
     .from("ranking")
-    .select("player_name, total_time, secrets")
-    .order("total_time", { ascending: true })
-    .limit(10);
+    .select("player_name, total_time, secrets");
 
   if (error) {
-    return NextResponse.json(
-      { error: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json(data ?? []);
+  const sorted = (data ?? [])
+    .map((entry) => ({
+      ...entry,
+      secrets: Array.isArray(entry.secrets) ? entry.secrets : [],
+    }))
+    .sort((a, b) => {
+      const secretsDiff = b.secrets.length - a.secrets.length;
+      if (secretsDiff !== 0) return secretsDiff;
+
+      return a.total_time - b.total_time;
+    })
+    .slice(0, 10);
+
+  return NextResponse.json(sorted);
 }
