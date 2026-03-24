@@ -44,8 +44,9 @@ type RankingEntry = {
   secrets: string[];
 };
 
-const SHARE_LINK2 = "youtube.com/@tiguiando?sub_confirmation=1&sub_confirmation=1";
 const SHARE_LINK = "https://encontreofim.vercel.app/";
+const HELP_DEV_LINK =
+  "https://www.youtube.com/@tiguiando?sub_confirmation=1&sub_confirmation=1";
 
 const MAX_CLICKS = 5;
 const SLEEP_LIMIT_SECONDS = 33 * 60 + 33;
@@ -581,7 +582,7 @@ export default function Home() {
   const [viewportWidth, setViewportWidth] = useState(1200);
   const [isMobile, setIsMobile] = useState(false);
 
-  const totalTimerStartedRef = useRef<number | null>(null);
+  const sessionStartRef = useRef<number | null>(null);
   const lastBossActionRef = useRef<number | null>(null);
   const lastInteractionRef = useRef<number>(Date.now());
   const lastKnockRef = useRef<number>(Date.now());
@@ -639,17 +640,10 @@ export default function Home() {
     return collectedRewards.some((reward) => reward.id === id);
   }
 
-  function startTimers() {
-    if (!totalTimerStartedRef.current) {
-      totalTimerStartedRef.current = Date.now();
+  function startSessionTimer() {
+    if (!sessionStartRef.current) {
+      sessionStartRef.current = Date.now();
     }
-  }
-
-  function stopTotalTimer() {
-    if (!totalTimerStartedRef.current) return;
-    const elapsed = Math.floor((Date.now() - totalTimerStartedRef.current) / 1000);
-    setTotalElapsed(elapsed);
-    totalTimerStartedRef.current = null;
   }
 
   function touchInteraction() {
@@ -701,7 +695,6 @@ export default function Home() {
       if (next.length >= 5 && !fimUnlocked) {
         setFimUnlocked(true);
         setFinalCelebration(true);
-        stopTotalTimer();
         setStatusMessage("");
         setHint("");
       }
@@ -776,7 +769,6 @@ export default function Home() {
     setMainGameFinished(false);
     setSleepMode(false);
     setGameOver(false);
-    setTotalElapsed(0);
 
     setHeartSecretProgress([]);
     setHeartSecretUnlocked(false);
@@ -815,9 +807,6 @@ export default function Home() {
     setDieCell(null);
     setHasDie(false);
     setDieUsed(false);
-
-    totalTimerStartedRef.current = null;
-    startTimers();
 
     const now = Date.now();
     lastBossActionRef.current = now;
@@ -1041,28 +1030,25 @@ export default function Home() {
       }
     }
 
-    startTimers();
+    startSessionTimer();
     touchInteraction();
   }, [currentLevel, boardSeed, level.cols, level.rows, level.secretType]);
 
   useEffect(() => {
-    startTimers();
+    startSessionTimer();
     const now = Date.now();
     lastInteractionRef.current = now;
     lastKnockRef.current = now;
   }, []);
 
   useEffect(() => {
-    if (mainGameFinished || gameFinished || finalCelebration || gameOver) return;
-
     const interval = setInterval(() => {
-      if (!totalTimerStartedRef.current) return;
+      if (!sessionStartRef.current) return;
 
-      const elapsed = Math.floor((Date.now() - totalTimerStartedRef.current) / 1000);
+      const elapsed = Math.floor((Date.now() - sessionStartRef.current) / 1000);
       setTotalElapsed(elapsed);
 
-      if (!level.isSecret && elapsed >= SLEEP_LIMIT_SECONDS) {
-        setTotalElapsed(SLEEP_LIMIT_SECONDS);
+      if (!level.isSecret && elapsed >= SLEEP_LIMIT_SECONDS && !sleepMode && !finalCelebration) {
         setSleepMode(true);
         setHint("");
         setStatusMessage("VOLTE QUANDO ACORDAR.");
@@ -1070,13 +1056,11 @@ export default function Home() {
         if (!hasReward("slow")) {
           addReward("slow");
         }
-
-        totalTimerStartedRef.current = null;
       }
     }, 250);
 
     return () => clearInterval(interval);
-  }, [mainGameFinished, gameFinished, finalCelebration, gameOver, sleepMode, level.isSecret]);
+  }, [level.isSecret, sleepMode, finalCelebration]);
 
   useEffect(() => {
     if (sleepMode || mainGameFinished || gameFinished || finalCelebration || gameOver) return;
@@ -1307,7 +1291,6 @@ export default function Home() {
       setGameOver(true);
       setHint("");
       setStatusMessage("GAME OVER");
-      stopTotalTimer();
       return;
     }
 
@@ -1518,10 +1501,9 @@ export default function Home() {
           prev.includes(nextLevel) ? prev : [...prev, nextLevel]
         );
       } else if (currentLevel === 3) {
-        stopTotalTimer();
         setMainGameFinished(true);
 
-        if (totalElapsed < 10 && !hasReward("speed")) {
+        if (totalElapsed < 60 && !hasReward("speed")) {
           addReward("speed");
         }
 
@@ -2701,22 +2683,22 @@ ${SHARE_LINK}`;
       )}
 
       <div className="fixed bottom-2 left-1/2 -translate-x-1/2 z-40 flex items-center gap-4">
-  <button
-    onClick={() => setShowInstructions(true)}
-    className="text-[10px] sm:text-xs text-zinc-500/70 hover:text-zinc-300 transition tracking-[0.18em] uppercase"
-  >
-    GUIA
-  </button>
+        <button
+          onClick={() => setShowInstructions(true)}
+          className="text-[10px] sm:text-xs text-zinc-500/70 hover:text-zinc-300 transition tracking-[0.18em] uppercase"
+        >
+          GUIA
+        </button>
 
-  <a
-    href={SHARE_LINK2}
-    target="_blank"
-    rel="noopener noreferrer"
-    className="text-[10px] sm:text-xs text-zinc-500/70 hover:text-zinc-300 transition tracking-[0.18em] uppercase"
-  >
-    HELP the DEV
-  </a>
-</div>
+        <a
+          href={HELP_DEV_LINK}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[10px] sm:text-xs text-zinc-500/70 hover:text-zinc-300 transition tracking-[0.18em] uppercase"
+        >
+          HELP the DEV
+        </a>
+      </div>
     </main>
   );
 }
