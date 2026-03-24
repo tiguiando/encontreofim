@@ -137,17 +137,14 @@ const FIM_PATTERN = [
   "100000101000001",
 ];
 
-const BASE_RANKING: RankingEntry[] = [
-  { name: "SYSTEM", time: 9, secrets: ["💀", "👽", "♠️", "❤️"] },
-  { name: "VOIDRUNNER", time: 72, secrets: ["👽", "🧠"] },
-  { name: "CLARA_44", time: 89, secrets: ["❤️", "🐇"] },
-  { name: "SHADOW", time: 123, secrets: ["💀", "🐢", "⏰"] },
-  { name: "UNKNOWN", time: 146, secrets: ["❤️"] },
-  { name: "PIXELFOX", time: 159, secrets: ["👽", "♠️"] },
-  { name: "NULL", time: 171, secrets: ["💀"] },
-  { name: "GLITCH", time: 184, secrets: ["🧠", "🐢"] },
-  { name: "MIRROR", time: 201, secrets: ["❤️", "💀"] },
-  { name: "ECHO", time: 215, secrets: ["⏰"] },
+const INSTRUCTIONS_LINES = [
+  "Existem segredos escondidos entre os reinos",
+  "Sua mente está presa em uma caixa",
+  "Para sair, encontre o tesouro e siga os sinais no topo da tela",
+  "Dizem que DEVon passou pelo reino seguinte ao primeiro, distribuindo cartas como quem deixa migalhas para os perdidos",
+  "Avance com cautela",
+  "Mas cuidado: nem toda pista foi feita para salvar você",
+  "O fim nem sempre é o fim",
 ];
 
 function invertDirection(direction: string) {
@@ -571,9 +568,10 @@ export default function Home() {
   const [sixNineDone, setSixNineDone] = useState<number[]>([]);
 
   const [playerName, setPlayerName] = useState("");
-  const [ranking, setRanking] = useState<RankingEntry[]>(BASE_RANKING);
+  const [ranking, setRanking] = useState<RankingEntry[]>([]);
   const [rankingSaved, setRankingSaved] = useState(false);
   const [showRankingModal, setShowRankingModal] = useState(false);
+  const [showInstructions, setShowInstructions] = useState(false);
 
   const [dieCell, setDieCell] = useState<Cell | null>(null);
   const [hasDie, setHasDie] = useState(false);
@@ -601,10 +599,7 @@ export default function Home() {
     [totalElapsed]
   );
 
-  const displayRanking = useMemo(() => {
-    const withoutSystem = ranking.filter((entry) => entry.name !== "SYSTEM");
-    return [{ name: "SYSTEM", time: 9, secrets: ["💀", "👽", "♠️", "❤️"] }, ...withoutSystem].slice(0, 10);
-  }, [ranking]);
+  const displayRanking = useMemo(() => ranking.slice(0, 10), [ranking]);
 
   const boardGapClass = isMobile ? "gap-1" : "gap-2";
   const boardPaddingClass = isMobile ? "p-2" : "p-3";
@@ -747,14 +742,13 @@ export default function Home() {
       const data = await rankingRes.json();
 
       if (Array.isArray(data)) {
-        const formatted: RankingEntry[] = [
-          { name: "SYSTEM", time: 9, secrets: ["💀", "👽", "♠️", "❤️"] },
-          ...data.map((r: any) => ({
+        const formatted: RankingEntry[] = data
+          .map((r: any) => ({
             name: r.player_name,
             time: r.total_time,
             secrets: Array.isArray(r.secrets) ? r.secrets : [],
-          })),
-        ].slice(0, 10);
+          }))
+          .slice(0, 10);
 
         setRanking(formatted);
       }
@@ -815,6 +809,7 @@ export default function Home() {
     setPlayerName("");
     setRankingSaved(false);
     setShowRankingModal(false);
+    setShowInstructions(false);
 
     setDieCell(null);
     setHasDie(false);
@@ -848,28 +843,27 @@ export default function Home() {
         const res = await fetch("/api/ranking", { cache: "no-store" });
 
         if (!res.ok) {
-          setRanking(BASE_RANKING);
+          setRanking([]);
           return;
         }
 
         const data = await res.json();
 
         if (Array.isArray(data)) {
-          const formatted: RankingEntry[] = [
-            { name: "SYSTEM", time: 9, secrets: ["💀", "👽", "♠️", "❤️"] },
-            ...data.map((r: any) => ({
+          const formatted: RankingEntry[] = data
+            .map((r: any) => ({
               name: r.player_name,
               time: r.total_time,
               secrets: Array.isArray(r.secrets) ? r.secrets : [],
-            })),
-          ].slice(0, 10);
+            }))
+            .slice(0, 10);
 
           setRanking(formatted);
         } else {
-          setRanking(BASE_RANKING);
+          setRanking([]);
         }
       } catch {
-        setRanking(BASE_RANKING);
+        setRanking([]);
       }
     }
 
@@ -2041,20 +2035,47 @@ ${SHARE_LINK}`;
         </div>
       )}
 
+      {showInstructions && (
+        <div
+          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setShowInstructions(false)}
+        >
+          <div className="w-full max-w-md rounded-2xl border border-zinc-700 bg-zinc-900/95 shadow-2xl px-5 py-5 text-zinc-100">
+            <p className="text-[10px] sm:text-xs tracking-[0.28em] uppercase text-zinc-500 mb-3">
+              Instruções
+            </p>
+            <div className="space-y-3 text-sm sm:text-base leading-relaxed">
+              {INSTRUCTIONS_LINES.map((line) => (
+                <p key={line}>{line}</p>
+              ))}
+            </div>
+            <p className="mt-4 text-[11px] sm:text-xs text-zinc-500">
+              Clique em qualquer lugar para sair
+            </p>
+          </div>
+        </div>
+      )}
+
       {showRankingModal && !finalCelebration && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 backdrop-blur-sm p-3 sm:p-4">
-          <div className="w-full max-w-2xl rounded-2xl border border-zinc-700 bg-zinc-900 text-zinc-100 shadow-2xl max-h-[85vh] overflow-hidden">
-            <div className="flex items-center justify-between px-4 sm:px-5 py-3 sm:py-4 border-b border-zinc-800">
+        <div
+          className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 backdrop-blur-sm p-3 sm:p-4"
+          onClick={() => setShowRankingModal(false)}
+        >
+          <div
+            className="w-full max-w-sm sm:max-w-md rounded-2xl border border-zinc-700 bg-zinc-900 text-zinc-100 shadow-2xl max-h-[82vh] overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
               <div>
-                <p className="text-[10px] sm:text-xs tracking-[0.2em] sm:tracking-[0.3em] text-zinc-400 uppercase">
+                <p className="text-[10px] tracking-[0.22em] text-zinc-400 uppercase">
                   Você não está sozinho aqui...
                 </p>
-                <h2 className="text-lg sm:text-xl font-bold mt-1">🏆 Ranking Global</h2>
+                <h2 className="text-base sm:text-lg font-bold mt-1">🏆 Ranking Global</h2>
               </div>
 
               <button
                 onClick={() => setShowRankingModal(false)}
-                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-zinc-800 hover:bg-zinc-700 transition text-base sm:text-lg"
+                className="w-8 h-8 rounded-full bg-zinc-800 hover:bg-zinc-700 transition text-sm"
                 aria-label="Fechar ranking"
                 title="Fechar"
               >
@@ -2062,30 +2083,30 @@ ${SHARE_LINK}`;
               </button>
             </div>
 
-            <div className="p-3 sm:p-4 space-y-2 text-xs sm:text-sm overflow-y-auto max-h-[calc(85vh-88px)]">
-              {displayRanking.map((entry, index) => (
-                <div
-                  key={`${entry.name}-${index}`}
-                  className="flex items-center justify-between px-3 py-3 rounded-xl bg-zinc-800 gap-3"
-                >
-                  <span className="font-medium min-w-[90px] sm:min-w-[110px]">
-                    #{index + 1} {entry.name}
-                  </span>
-
-                  <span className="flex items-center gap-2 sm:gap-3 text-right ml-auto">
-                    <span className="font-mono">{formatTime(entry.time)}</span>
-                    <span className="min-w-[72px] sm:min-w-[96px] text-right">{entry.secrets.join(" ")}</span>
-                  </span>
+            <div className="p-3 space-y-2 text-[11px] sm:text-xs overflow-y-auto max-h-[calc(82vh-76px)]">
+              {displayRanking.length === 0 ? (
+                <div className="px-3 py-4 rounded-xl bg-zinc-800 text-zinc-400 text-center">
+                  Ninguém escapou ainda.
                 </div>
-              ))}
+              ) : (
+                displayRanking.map((entry, index) => (
+                  <div
+                    key={`${entry.name}-${index}`}
+                    className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-zinc-800 gap-2"
+                  >
+                    <span className="font-medium min-w-[72px] truncate">
+                      #{index + 1} {entry.name}
+                    </span>
 
-              <div className="flex items-center justify-between px-3 py-3 rounded-xl bg-yellow-500/10 text-yellow-300 border border-yellow-500/20 gap-3">
-                <span className="font-medium min-w-[90px] sm:min-w-[110px]">#? YOU?</span>
-                <span className="flex items-center gap-2 sm:gap-3 ml-auto">
-                  <span className="font-mono">--:--</span>
-                  <span>❓</span>
-                </span>
-              </div>
+                    <span className="flex items-center gap-2 text-right ml-auto">
+                      <span className="font-mono text-zinc-200">{formatTime(entry.time)}</span>
+                      <span className="min-w-[64px] text-right truncate">
+                        {entry.secrets.join(" ")}
+                      </span>
+                    </span>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
@@ -2678,14 +2699,12 @@ ${SHARE_LINK}`;
         </button>
       )}
 
-      <a
-        href={SHARE_LINK}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="fixed bottom-2 left-1/2 -translate-x-1/2 text-[10px] sm:text-xs text-zinc-500/70 hover:text-zinc-300 transition tracking-[0.25em] uppercase z-40"
+      <button
+        onClick={() => setShowInstructions(true)}
+        className="fixed bottom-2 left-1/2 -translate-x-1/2 text-[10px] sm:text-xs text-zinc-500/70 hover:text-zinc-300 transition tracking-[0.18em] uppercase z-40"
       >
-        DEV
-      </a>
+        HELP the DEV
+      </button>
     </main>
   );
 }
