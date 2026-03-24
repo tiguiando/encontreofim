@@ -30,12 +30,18 @@ type Reward = {
   emoji: string;
 };
 
-type HintEnvelopeId = "heart" | "alien" | "boss" | "ace";
+type HintEnvelopeId = "heart" | "alien" | "boss" | "ace" | "memory";
 
 type HintEnvelope = {
   id: HintEnvelopeId;
   cell: Cell;
   text: string;
+};
+
+type RankingEntry = {
+  name: string;
+  time: number;
+  secrets: string[];
 };
 
 const SHARE_LINK = "https://linktr.ee/tiagooliva";
@@ -45,6 +51,8 @@ const SLEEP_LIMIT_SECONDS = 33 * 60 + 33;
 const IDLE_KNOCK_MS = 33_000;
 const FIM_CELL_SIZE = 34;
 const NORMAL_CELL_SIZE = 46;
+const RANKING_STORAGE_KEY = "encontre-o-fim-ranking";
+const MESSAGE_MS = 3000;
 
 const LEVELS: LevelConfig[] = [
   { id: 1, name: "Nível 1", cols: 10, rows: 6 },
@@ -72,6 +80,8 @@ const HINT_TEXTS: Record<HintEnvelopeId, string> = {
   alien: "existem objetos nao identificados naquela area que ja passou",
   boss: "esse ser maligno tem um numero proprio",
   ace: "essa jogo é AAA, pra mim sempre será o numero 1!",
+  memory:
+    "tenho memoria ruim, as vezes eu repito o nome do jogo varias vezes pra não esquecer.",
 };
 
 const HINT_CARD_EMOJI: Record<HintEnvelopeId, string> = {
@@ -79,6 +89,7 @@ const HINT_CARD_EMOJI: Record<HintEnvelopeId, string> = {
   alien: "💌",
   boss: "💌",
   ace: "💌",
+  memory: "💌",
 };
 
 const FINAL_MESSAGES = [
@@ -127,6 +138,19 @@ const FIM_PATTERN = [
   "100000101000001",
   "100000101000001",
   "100000101000001",
+];
+
+const BASE_RANKING: RankingEntry[] = [
+  { name: "SYSTEM", time: 9, secrets: ["💀", "👽", "♠️", "❤️"] },
+  { name: "VOIDRUNNER", time: 72, secrets: ["👽", "🧠"] },
+  { name: "CLARA_44", time: 89, secrets: ["❤️", "🐇"] },
+  { name: "SHADOW", time: 123, secrets: ["💀", "🐢", "⏰"] },
+  { name: "UNKNOWN", time: 146, secrets: ["❤️"] },
+  { name: "PIXELFOX", time: 159, secrets: ["👽", "♠️"] },
+  { name: "NULL", time: 171, secrets: ["💀"] },
+  { name: "GLITCH", time: 184, secrets: ["🧠", "🐢"] },
+  { name: "MIRROR", time: 201, secrets: ["❤️", "💀"] },
+  { name: "ECHO", time: 215, secrets: ["⏰"] },
 ];
 
 function invertDirection(direction: string) {
@@ -541,6 +565,11 @@ export default function Home() {
   });
   const [sixNineDone, setSixNineDone] = useState<number[]>([]);
 
+  const [playerName, setPlayerName] = useState("");
+  const [ranking, setRanking] = useState<RankingEntry[]>(BASE_RANKING);
+  const [rankingSaved, setRankingSaved] = useState(false);
+  const [showRankingModal, setShowRankingModal] = useState(false);
+
   const totalTimerStartedRef = useRef<number | null>(null);
   const lastBossActionRef = useRef<number | null>(null);
   const lastInteractionRef = useRef<number>(Date.now());
@@ -559,6 +588,11 @@ export default function Home() {
     () => getFinalMessage(totalElapsed),
     [totalElapsed]
   );
+
+  const displayRanking = useMemo(() => {
+    const withoutSystem = ranking.filter((entry) => entry.name !== "SYSTEM");
+    return [{ name: "SYSTEM", time: 9, secrets: ["💀", "👽", "♠️", "❤️"] }, ...withoutSystem].slice(0, 10);
+  }, [ranking]);
 
   function hasReward(id: RewardId) {
     return collectedRewards.some((reward) => reward.id === id);
@@ -587,7 +621,7 @@ export default function Home() {
     }
   }
 
-  function flashStatus(message: string, ms = 1800) {
+  function flashStatus(message: string, ms = MESSAGE_MS) {
     setStatusMessage(message);
     if (statusTimeoutRef.current) {
       window.clearTimeout(statusTimeoutRef.current);
@@ -597,7 +631,7 @@ export default function Home() {
     }, ms);
   }
 
-  function flashSignal(message: string, ms = 1000) {
+  function flashSignal(message: string, ms = MESSAGE_MS) {
     setSignalMessage(message);
     if (signalTimeoutRef.current) {
       window.clearTimeout(signalTimeoutRef.current);
@@ -607,7 +641,7 @@ export default function Home() {
     }, ms);
   }
 
-  function flashIdle(message: string, ms = 1000) {
+  function flashIdle(message: string, ms = MESSAGE_MS) {
     setIdleMessage(message);
     if (idleTimeoutRef.current) {
       window.clearTimeout(idleTimeoutRef.current);
@@ -633,6 +667,30 @@ export default function Home() {
 
       return next;
     });
+  }
+
+  function handleSaveRanking() {
+    if (!playerName.trim() || rankingSaved) return;
+
+    const newEntry: RankingEntry = {
+      name: playerName.trim().slice(0, 12),
+      time: totalElapsed,
+      secrets: collectedRewards.map((reward) => reward.emoji),
+    };
+
+    const updated = [...ranking.filter((entry) => entry.name !== "SYSTEM"), newEntry]
+      .sort((a, b) => a.time - b.time)
+      .slice(0, 9);
+
+    const finalRanking = [
+      { name: "SYSTEM", time: 9, secrets: ["💀", "👽", "♠️", "❤️"] },
+      ...updated,
+    ];
+
+    setRanking(finalRanking);
+    localStorage.setItem(RANKING_STORAGE_KEY, JSON.stringify(finalRanking));
+    setRankingSaved(true);
+    flashStatus("Ranking salvo.");
   }
 
   function resetGame() {
@@ -684,6 +742,10 @@ export default function Home() {
     setTitleClicks(0);
     setTrollMode(false);
 
+    setPlayerName("");
+    setRankingSaved(false);
+    setShowRankingModal(false);
+
     totalTimerStartedRef.current = null;
     startTimers();
 
@@ -692,6 +754,25 @@ export default function Home() {
     lastInteractionRef.current = now;
     lastKnockRef.current = now;
   }
+
+  useEffect(() => {
+    const saved = localStorage.getItem(RANKING_STORAGE_KEY);
+
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as RankingEntry[];
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setRanking(parsed);
+        } else {
+          setRanking(BASE_RANKING);
+        }
+      } catch {
+        setRanking(BASE_RANKING);
+      }
+    } else {
+      setRanking(BASE_RANKING);
+    }
+  }, []);
 
   useEffect(() => {
     const bombCount =
@@ -781,24 +862,30 @@ export default function Home() {
         setLevelOneKeyCells([]);
         setLevelThreeLockCell(null);
 
-        const activeHintIds: HintEnvelopeId[] = [];
+        const hintPool: HintEnvelopeId[] = [];
 
-        if (!heartSecretUnlocked && !foundHintCards.includes("heart")) activeHintIds.push("heart");
-        if (!alienSecretUnlocked && !foundHintCards.includes("alien")) activeHintIds.push("alien");
-        if (!bossSecretUnlocked && !foundHintCards.includes("boss")) activeHintIds.push("boss");
-        if (!aceSecretUnlocked && !foundHintCards.includes("ace")) activeHintIds.push("ace");
+        if (!heartSecretUnlocked) hintPool.push("heart", "heart", "heart");
+        if (!alienSecretUnlocked) hintPool.push("alien", "alien", "alien");
+        if (!bossSecretUnlocked) hintPool.push("boss", "boss", "boss");
+        if (!aceSecretUnlocked) hintPool.push("ace", "ace", "ace");
+
+        hintPool.push("memory", "memory", "memory", "memory", "memory");
 
         const generatedHints: HintEnvelope[] = [];
         const blockedForHints = new Set(blockedWithTreasure);
 
-        for (const id of activeHintIds) {
-          const cellA = randomCellAvoiding(level.cols, level.rows, blockedForHints);
-          blockedForHints.add(cellKey(cellA));
-          const cellB = randomCellAvoiding(level.cols, level.rows, blockedForHints);
-          blockedForHints.add(cellKey(cellB));
+        const totalHintCards = Math.min(
+          8,
+          Math.max(4, Math.floor((level.cols * level.rows) / 18))
+        );
 
-          generatedHints.push({ id, cell: cellA, text: HINT_TEXTS[id] });
-          generatedHints.push({ id, cell: cellB, text: HINT_TEXTS[id] });
+        for (let i = 0; i < totalHintCards && hintPool.length > 0; i++) {
+          const randomIndex = Math.floor(Math.random() * hintPool.length);
+          const id = hintPool.splice(randomIndex, 1)[0];
+
+          const cell = randomCellAvoiding(level.cols, level.rows, blockedForHints);
+          blockedForHints.add(cellKey(cell));
+          generatedHints.push({ id, cell, text: HINT_TEXTS[id] });
         }
 
         setLevelTwoHintCells(generatedHints);
@@ -850,6 +937,12 @@ export default function Home() {
     level.cols,
     level.rows,
     level.secretType,
+    hasKey,
+    giftUnlocked,
+    heartSecretUnlocked,
+    alienSecretUnlocked,
+    bossSecretUnlocked,
+    aceSecretUnlocked,
   ]);
 
   useEffect(() => {
@@ -894,7 +987,7 @@ export default function Home() {
       const sinceLastKnock = now - lastKnockRef.current;
 
       if (idleFor >= IDLE_KNOCK_MS && sinceLastKnock >= IDLE_KNOCK_MS) {
-        flashIdle("TOC TOC", 1000);
+        flashIdle("TOC TOC");
         lastKnockRef.current = now;
       }
     }, 500);
@@ -953,7 +1046,7 @@ export default function Home() {
 
     if (next >= 10 && !trollMode) {
       setTrollMode(true);
-      flashStatus("Modo troll ativado. As dicas agora mentem.");
+      flashStatus("Modo troll ativado. As dicas agora mentem. CORRA!!!");
     }
   }
 
@@ -964,7 +1057,7 @@ export default function Home() {
   }
 
   function handleHintCardClick(id: HintEnvelopeId) {
-    flashStatus(HINT_TEXTS[id], 2000);
+    flashStatus(HINT_TEXTS[id]);
   }
 
   function maybeHandleSixNine(levelId: number, cell: Cell) {
@@ -989,7 +1082,7 @@ export default function Home() {
 
       setSixNineDone((prev) => [...prev, levelId]);
       setSixNineProgress((prev) => ({ ...prev, [levelId]: 0 }));
-      flashStatus(messages[levelId], 2000);
+      flashStatus(messages[levelId]);
       return true;
     }
 
@@ -1062,12 +1155,14 @@ export default function Home() {
       );
 
       if (envelope) {
-        if (!foundHintCards.includes(envelope.id)) {
-          setFoundHintCards((prev) => [...prev, envelope.id]);
-          setLevelTwoHintCells((prev) => prev.filter((item) => item.id !== envelope.id));
-        }
+        setFoundHintCards((prev) => [...prev, envelope.id]);
+        setLevelTwoHintCells((prev) =>
+          prev.filter(
+            (item) => !(item.cell.col === cell.col && item.cell.row === cell.row)
+          )
+        );
 
-        flashStatus(envelope.text, 2000);
+        flashStatus(envelope.text);
 
         const distance = Math.abs(cell.col - treasure.col) + Math.abs(cell.row - treasure.row);
         setClickedCells((prev) => [...prev, key]);
@@ -1075,13 +1170,13 @@ export default function Home() {
         setClicks((c) => c + 1);
 
         if (!triggeredSecretMessage && clicks + 1 >= MAX_CLICKS && distance === 1) {
-          flashStatus("Era literalmente ao lado…", 2200);
+          flashStatus("Era literalmente ao lado…");
         }
         return;
       }
     }
 
-    if (currentLevel === 1 && !hasKey && levelOneKeyCells.length > 0) {
+    if (currentLevel === 1 && !hasKey && !giftUnlocked && levelOneKeyCells.length > 0) {
       const clickedKey = levelOneKeyCells.find(
         (keyCell) => keyCell.col === cell.col && keyCell.row === cell.row
       );
@@ -1096,7 +1191,7 @@ export default function Home() {
         const nextClicks = clicks + 1;
 
         if (!triggeredSecretMessage && nextClicks >= MAX_CLICKS && distance === 1) {
-          flashStatus("Era literalmente ao lado…", 2200);
+          flashStatus("Era literalmente ao lado…");
         } else if (!triggeredSecretMessage) {
           setStatusMessage("");
         }
@@ -1112,9 +1207,11 @@ export default function Home() {
       setGiftUnlocked(true);
       setGiftOpenedThisRun(true);
       setClickedCells((prev) => [...prev, key]);
+      setLevelOneKeyCells([]);
+      setRevealedKeyCell(null);
       addReward("gift");
-      flashSignal("CLICK", 1000);
-      flashStatus("Um presente foi liberado.", 1400);
+      flashSignal("CLICK");
+      flashStatus("Um presente foi liberado.");
       setClicks((c) => c + 1);
       return;
     }
@@ -1145,7 +1242,7 @@ export default function Home() {
       setHeartSecretProgress(nextHeartSet);
 
       if (!heartSecretUnlocked) {
-        flashSignal("CLICK", 1000);
+        flashSignal("CLICK");
       }
 
       const completedHeart =
@@ -1165,7 +1262,7 @@ export default function Home() {
       setBossSecretProgress(nextBossSet);
 
       if (!bossSecretUnlocked) {
-        flashSignal("CLICK", 1000);
+        flashSignal("CLICK");
       }
 
       const completedBoss =
@@ -1183,12 +1280,12 @@ export default function Home() {
     if (!alienSecretUnlocked && currentLevel === 1) {
       if (clickedAlienStepOne && alienSequenceStep === 0) {
         setAlienSequenceStep(1);
-        flashSignal("CLICK", 1000);
+        flashSignal("CLICK");
       } else if (clickedAlienStepTwo && alienSequenceStep === 1) {
         setAlienSequenceStep(2);
         setAlienSecretUnlocked(true);
         setUnlockedLevels((prev) => (prev.includes(6) ? prev : [...prev, 6]));
-        flashSignal("CLICK", 1000);
+        flashSignal("CLICK");
       } else if (!clickedAlienStepOne && !clickedAlienStepTwo) {
         setAlienSequenceStep(0);
       } else if (clickedAlienStepTwo && alienSequenceStep === 0) {
@@ -1201,7 +1298,7 @@ export default function Home() {
       setAceSecretProgress(nextAceSet);
 
       if (!aceSecretUnlocked) {
-        flashSignal("CLICK", 1000);
+        flashSignal("CLICK");
       }
 
       const completedAce =
@@ -1261,9 +1358,9 @@ export default function Home() {
       if (triggeredSecretMessage) {
         // mantém a mensagem secreta visível
       } else if (nextClicks >= MAX_CLICKS && distance === 1) {
-        flashStatus("Era literalmente ao lado…", 2200);
+        flashStatus("Era literalmente ao lado…");
       } else if (level.secretType === "boss" && nextClicks >= 3) {
-        flashStatus("Você está procurando… ou sendo observado?", 1800);
+        flashStatus("Você está procurando… ou sendo observado?");
       } else {
         setStatusMessage("");
       }
@@ -1453,7 +1550,7 @@ ${SHARE_LINK}`;
 
   return (
     <main
-      className={`min-h-screen text-white flex flex-col items-center justify-center gap-6 p-6 relative overflow-hidden ${
+      className={`min-h-screen text-white flex flex-col items-center justify-center gap-3 px-6 py-3 relative overflow-hidden ${
         level.secretType === "boss" ? "bg-black" : "bg-zinc-950"
       }`}
     >
@@ -1754,7 +1851,57 @@ ${SHARE_LINK}`;
         </div>
       )}
 
-      <div className="relative z-10 w-full flex flex-col items-center gap-6">
+      {showRankingModal && !finalCelebration && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="w-full max-w-2xl rounded-2xl border border-zinc-700 bg-zinc-900 text-zinc-100 shadow-2xl max-h-[85vh] overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800">
+              <div>
+                <p className="text-xs tracking-[0.3em] text-zinc-400 uppercase">
+                  Você não está sozinho aqui...
+                </p>
+                <h2 className="text-xl font-bold mt-1">🏆 Ranking Global</h2>
+              </div>
+
+              <button
+                onClick={() => setShowRankingModal(false)}
+                className="w-10 h-10 rounded-full bg-zinc-800 hover:bg-zinc-700 transition text-lg"
+                aria-label="Fechar ranking"
+                title="Fechar"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-4 space-y-2 text-sm overflow-y-auto max-h-[calc(85vh-88px)]">
+              {displayRanking.map((entry, index) => (
+                <div
+                  key={`${entry.name}-${index}`}
+                  className="flex items-center justify-between px-3 py-3 rounded-xl bg-zinc-800 gap-3"
+                >
+                  <span className="font-medium min-w-[110px]">
+                    #{index + 1} {entry.name}
+                  </span>
+
+                  <span className="flex items-center gap-3 text-right ml-auto">
+                    <span className="font-mono">{formatTime(entry.time)}</span>
+                    <span className="min-w-[96px] text-right">{entry.secrets.join(" ")}</span>
+                  </span>
+                </div>
+              ))}
+
+              <div className="flex items-center justify-between px-3 py-3 rounded-xl bg-yellow-500/10 text-yellow-300 border border-yellow-500/20 gap-3">
+                <span className="font-medium min-w-[110px]">#? YOU?</span>
+                <span className="flex items-center gap-3 ml-auto">
+                  <span className="font-mono">--:--</span>
+                  <span>❓</span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="relative z-10 w-full flex flex-col items-center gap-3">
         <h1
           onClick={handleTitleClick}
           className="text-4xl font-bold cursor-pointer select-none"
@@ -1806,7 +1953,7 @@ ${SHARE_LINK}`;
           </div>
         )}
 
-        <div className="text-center space-y-2 min-h-[240px]">
+        <div className="text-center space-y-1 min-h-[150px]">
           {!finalCelebration && <p className="text-xl font-semibold">{level.name}</p>}
 
           {!finalCelebration && (
@@ -1906,6 +2053,28 @@ ${SHARE_LINK}`;
               <p className="text-green-400 text-xl font-semibold">
                 Tempo final: {formatTime(totalElapsed)}
               </p>
+
+              <div className="flex flex-col items-center gap-2 mt-4">
+                <input
+                  value={playerName}
+                  onChange={(e) => setPlayerName(e.target.value)}
+                  placeholder="Seu nome"
+                  maxLength={12}
+                  className="px-3 py-2 rounded bg-zinc-800 border border-zinc-600 text-white text-center outline-none focus:border-amber-400"
+                />
+
+                <button
+                  onClick={handleSaveRanking}
+                  disabled={!playerName.trim() || rankingSaved}
+                  className={`px-4 py-2 rounded font-semibold transition ${
+                    !playerName.trim() || rankingSaved
+                      ? "bg-zinc-700 text-zinc-400 cursor-not-allowed"
+                      : "bg-amber-400 hover:bg-amber-300 text-black"
+                  }`}
+                >
+                  {rankingSaved ? "RANKING SALVO" : "SALVAR RANKING"}
+                </button>
+              </div>
             </>
           )}
 
@@ -2066,6 +2235,7 @@ ${SHARE_LINK}`;
                 const showFoundKey =
                   currentLevel === 1 &&
                   !!revealedKeyCell &&
+                  !giftUnlocked &&
                   col === revealedKeyCell.col &&
                   row === revealedKeyCell.row;
 
@@ -2156,7 +2326,7 @@ ${SHARE_LINK}`;
           </div>
         )}
 
-        <div className="flex flex-wrap items-center justify-center gap-3">
+        <div className="flex flex-wrap items-center justify-center gap-2">
           <button
             onClick={resetGame}
             className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white font-semibold px-5 py-3 rounded-xl transition"
@@ -2252,12 +2422,12 @@ ${SHARE_LINK}`;
 
         {shareMessage && <p className="text-sm text-zinc-300">{shareMessage}</p>}
 
-        <div className="w-full max-w-5xl flex items-end justify-between gap-4">
+        <div className="w-full max-w-5xl flex items-end justify-between gap-3">
           <div className="min-h-[40px] min-w-[72px] px-3 py-2 rounded-xl border border-zinc-700 bg-zinc-900/80 flex items-center justify-start gap-2 text-2xl flex-wrap">
             {hasKey && !giftUnlocked && <span title="Chave">🔑</span>}
-            {foundHintCards.map((id) => (
+            {foundHintCards.map((id, index) => (
               <button
-                key={id}
+                key={`${id}-${index}`}
                 onClick={() => handleHintCardClick(id)}
                 className="text-2xl hover:scale-110 transition"
                 title="Ler dica"
@@ -2275,11 +2445,22 @@ ${SHARE_LINK}`;
         </div>
       </div>
 
+      {!finalCelebration && (
+        <button
+          onClick={() => setShowRankingModal(true)}
+          className="fixed bottom-10 left-1/2 -translate-x-1/2 z-40 w-11 h-11 rounded-full border border-zinc-700 bg-zinc-900/80 hover:bg-zinc-800 text-xl flex items-center justify-center transition shadow-lg"
+          title="Abrir ranking"
+          aria-label="Abrir ranking"
+        >
+          🏆
+        </button>
+      )}
+
       <a
         href={SHARE_LINK}
         target="_blank"
         rel="noopener noreferrer"
-        className="fixed bottom-3 left-1/2 -translate-x-1/2 text-[10px] sm:text-xs text-zinc-500/70 hover:text-zinc-300 transition tracking-[0.25em] uppercase z-40"
+        className="fixed bottom-2 left-1/2 -translate-x-1/2 text-[10px] sm:text-xs text-zinc-500/70 hover:text-zinc-300 transition tracking-[0.25em] uppercase z-40"
       >
         DEV
       </a>
