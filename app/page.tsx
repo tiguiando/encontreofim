@@ -141,11 +141,11 @@ const FIM_PATTERN = [
 ];
 
 const INSTRUCTIONS_LINES = [
-  "Existem segredos escondidos entre os reinos",
   "Sua mente está presa em uma caixa",
+  "Existem segredos lógicos a serem desbloqueados entre os reinos",
   "Para sair, encontre o tesouro e siga os sinais no topo da tela",
   "Dizem que DEVon passou pelo reino seguinte ao primeiro, distribuindo cartas como quem deixa migalhas para os perdidos",
-  "Avance com cautela",
+  "Pense fora das caixas e avance com cautela",
   "Mas cuidado: nem toda pista foi feita para salvar você",
   "O fim nem sempre é o fim",
 ];
