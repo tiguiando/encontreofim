@@ -44,7 +44,8 @@ type RankingEntry = {
   secrets: string[];
 };
 
-const SHARE_LINK = "https://www.youtube.com/@tiguiando?sub_confirmation=1&sub_confirmation=1";
+const SHARE_LINK2 = "youtube.com/@tiguiando?sub_confirmation=1&sub_confirmation=1";
+const SHARE_LINK = "https://encontreofim.vercel.app/";
 
 const MAX_CLICKS = 5;
 const SLEEP_LIMIT_SECONDS = 33 * 60 + 33;
@@ -2708,7 +2709,7 @@ ${SHARE_LINK}`;
   </button>
 
   <a
-    href={SHARE_LINK}
+    href={SHARE_LINK2}
     target="_blank"
     rel="noopener noreferrer"
     className="text-[10px] sm:text-xs text-zinc-500/70 hover:text-zinc-300 transition tracking-[0.18em] uppercase"
