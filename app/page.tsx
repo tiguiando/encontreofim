@@ -2699,12 +2699,23 @@ ${SHARE_LINK}`;
         </button>
       )}
 
-      <button
-        onClick={() => setShowInstructions(true)}
-        className="fixed bottom-2 left-1/2 -translate-x-1/2 text-[10px] sm:text-xs text-zinc-500/70 hover:text-zinc-300 transition tracking-[0.18em] uppercase z-40"
-      >
-        HELP the DEV
-      </button>
+      <div className="fixed bottom-2 left-1/2 -translate-x-1/2 z-40 flex items-center gap-4">
+  <button
+    onClick={() => setShowInstructions(true)}
+    className="text-[10px] sm:text-xs text-zinc-500/70 hover:text-zinc-300 transition tracking-[0.18em] uppercase"
+  >
+    GUIA
+  </button>
+
+  <a
+    href={SHARE_LINK}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="text-[10px] sm:text-xs text-zinc-500/70 hover:text-zinc-300 transition tracking-[0.18em] uppercase"
+  >
+    HELP the DEV
+  </a>
+</div>
     </main>
   );
 }
