@@ -703,6 +703,7 @@ export default function Home() {
   const [mainGameFinished, setMainGameFinished] = useState(false);
   const [sleepMode, setSleepMode] = useState(false);
   const [totalElapsed, setTotalElapsed] = useState(0);
+  const [mainRunCompletedTime, setMainRunCompletedTime] = useState<number | null>(null);
   const [gameOver, setGameOver] = useState(false);
 
   const [heartSecretProgress, setHeartSecretProgress] = useState<number[]>([]);
@@ -783,9 +784,11 @@ export default function Home() {
     [currentLevel]
   );
 
+  const mainRunDisplayTime = mainRunCompletedTime ?? totalElapsed;
+
   const finalMessage = useMemo(
-    () => getFinalMessage(totalElapsed),
-    [totalElapsed]
+    () => getFinalMessage(mainRunDisplayTime),
+    [mainRunDisplayTime]
   );
 
   const displayRanking = useMemo(() => ranking.slice(0, 10), [ranking]);
@@ -834,6 +837,11 @@ export default function Home() {
     if (!sessionStartRef.current) {
       sessionStartRef.current = Date.now();
     }
+  }
+
+  function getSessionElapsedSeconds() {
+    if (!sessionStartRef.current) return 0;
+    return Math.floor((Date.now() - sessionStartRef.current) / 1000);
   }
 
   function resetRabbitRunSequence() {
@@ -995,9 +1003,11 @@ export default function Home() {
   async function handleSaveRanking() {
     if (!playerName.trim() || rankingSaved) return;
 
+    const rankingTime = showMainFinalMessage ? (mainRunCompletedTime ?? totalElapsed) : totalElapsed;
+
     const newEntry = {
       playerName: playerName.trim().slice(0, 12),
-      totalTime: totalElapsed,
+      totalTime: rankingTime,
       secrets: collectedRewards.map((reward) => reward.emoji),
     };
 
@@ -1057,6 +1067,7 @@ export default function Home() {
     setGameFinished(false);
     setMainGameFinished(false);
     setSleepMode(false);
+    setMainRunCompletedTime(null);
     setGameOver(false);
 
     setHeartSecretProgress([]);
@@ -1887,8 +1898,10 @@ export default function Home() {
         markRabbitRunProgress(currentLevel);
         markTrollRunProgress(currentLevel);
       } else if (currentLevel === 3) {
+        const completedRunTime = getSessionElapsedSeconds();
         markRabbitRunProgress(3);
         markTrollRunProgress(3);
+        setMainRunCompletedTime(completedRunTime);
         setMainGameFinished(true);
       } else if (currentLevel === 4) {
         addReward("heart");
@@ -1950,16 +1963,25 @@ export default function Home() {
     if (finalCelebration) {
       const rewardsLine =
         collectedRewards.length > 0
-          ? `\nConquistas: ${collectedRewards.map((reward) => reward.emoji).join(" ")}`
-          : "\nConquistas: nenhuma ainda";
+          ? `
+Conquistas: ${collectedRewards.map((reward) => reward.emoji).join(" ")}`
+          : "
+Conquistas: nenhuma ainda";
 
       const respectLine = hasReward("speed")
-        ? `\nvoce tem o meu respeito. DEV`
+        ? `
+voce tem o meu respeito. DEV`
         : "";
 
-      const totalLine = `\nTempo: ${formatTime(totalElapsed)}`;
+      const totalLine = `
+Tempo: ${formatTime(totalElapsed)}`;
+      const threeLevelsLine =
+        mainRunCompletedTime !== null
+          ? `
+3 niveis em sequencia: ${formatTime(mainRunCompletedTime)}`
+          : "";
 
-      const text = `Eu conclui o desafio no Encontre o FIM e esse e o meu resultado.${totalLine}${rewardsLine}${respectLine}
+      const text = `Eu conclui o desafio no Encontre o FIM e esse e o meu resultado.${totalLine}${threeLevelsLine}${rewardsLine}${respectLine}
 
 Vai encarar?
 
@@ -1984,15 +2006,24 @@ ${SHARE_LINK}`;
       return;
     }
 
-    const resultLine = found ? "Resultado: vitoria" : gameOver ? "Resultado: game over" : "Resultado: tentativa encerrada";
+    const shareTime = showMainFinalMessage ? (mainRunCompletedTime ?? totalElapsed) : totalElapsed;
+    const resultLine = showMainFinalMessage
+      ? "Resultado: conclui os 3 niveis"
+      : found
+        ? "Resultado: vitoria"
+        : gameOver
+          ? "Resultado: game over"
+          : "Resultado: tentativa encerrada";
+    const timeLabel = showMainFinalMessage ? "3 niveis em sequencia" : "Tempo";
     const rewardsLine =
       collectedRewards.length > 0
-        ? `\nConquistas: ${collectedRewards.map((reward) => reward.emoji).join(" ")}`
+        ? `
+Conquistas: ${collectedRewards.map((reward) => reward.emoji).join(" ")}`
         : "";
 
     const text = `Eu conclui o desafio no Encontre o FIM e esse e o meu resultado.
 ${resultLine}
-Tempo: ${formatTime(totalElapsed)}${rewardsLine}
+${timeLabel}: ${formatTime(shareTime)}${rewardsLine}
 
 Vai encarar?
 
@@ -2528,7 +2559,11 @@ ${SHARE_LINK}`;
             </p>
           )}
 
-          {showTime && <p className={isMobile ? "text-base" : "text-lg"}>Tempo: {formatTime(totalElapsed)}</p>}
+          {showTime && (
+            <p className={isMobile ? "text-base" : "text-lg"}>
+              {showMainFinalMessage ? "Cronometro geral" : "Tempo"}: {formatTime(totalElapsed)}
+            </p>
+          )}
 
           {!finalCelebration &&
             level.secretType === "boss" &&
@@ -2647,7 +2682,7 @@ ${SHARE_LINK}`;
                     {finalMessage}
                   </p>
                   <p className="text-green-400 text-lg sm:text-xl font-semibold">
-                    Tempo final: {formatTime(totalElapsed)}
+                    3 niveis em sequencia: {formatTime(mainRunDisplayTime)}
                   </p>
                 </>
               )}
