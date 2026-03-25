@@ -149,7 +149,7 @@ const HEART_FINAL_EMOJIS = ["❤️", "💖", "💜", "💙", "💛"];
 const ACE_FINAL_EMOJIS = ["♠️", "♥️", "♦️", "♣️"];
 const BRAIN_FINAL_EMOJIS = ["🧠", "🧠", "🧠"];
 const JACKPOT_FINAL_EMOJIS = ["🎰", "🪙", "💰", "✨"];
-const BANDIT_FINAL_EMOJIS = ["🎖️", "🚨", "🔒", "🚔"];
+const BANDIT_FINAL_EMOJIS = ["🚨", "🔒", "🚔", "🕵️"];
 
 const FIM_PATTERN = [
   "111110101100011",
@@ -1943,35 +1943,20 @@ export default function Home() {
     touchInteraction();
 
     if (finalCelebration) {
-      const finalGrid = FIM_PATTERN.map((line, row) =>
-        line
-          .split("")
-          .map((value, col) => {
-            const key = `${col}-${row}`;
-            const clicked = finalClickedCells.includes(key);
-
-            if (clicked) return getFinalBoardEmoji(row, col, finalTheme);
-            return value === "1" ? "🟨" : "⬛";
-          })
-          .join("")
-      ).join("\n");
-
       const rewardsLine =
         collectedRewards.length > 0
-          ? `\n${collectedRewards.map((reward) => reward.emoji).join(" ")}`
-          : "";
+          ? `\nConquistas: ${collectedRewards.map((reward) => reward.emoji).join(" ")}`
+          : "\nConquistas: nenhuma ainda";
 
       const respectLine = hasReward("speed")
         ? `\nvoce tem o meu respeito. DEV`
         : "";
 
-      const totalLine = `\nvc chegou aqui em ${formatTime(totalElapsed)}`;
+      const totalLine = `\nTempo: ${formatTime(totalElapsed)}`;
 
-      const text = `Encontre o Fim FIM
+      const text = `Joguei o Encontre o Fim e esse eh o meu resultado.${totalLine}${rewardsLine}${respectLine}
 
-Você reuniu os segredos. Agora é só celebrar e compartilhar.${totalLine}${respectLine}${rewardsLine}
-
-${finalGrid}
+Voce consegue fazer melhor?
 
 ${SHARE_LINK}`;
 
@@ -1994,60 +1979,17 @@ ${SHARE_LINK}`;
       return;
     }
 
-    const result = found ? `${clicks}/${MAX_CLICKS}` : `X/${MAX_CLICKS}`;
+    const resultLine = found ? "Resultado: vitoria" : gameOver ? "Resultado: game over" : "Resultado: tentativa encerrada";
+    const rewardsLine =
+      collectedRewards.length > 0
+        ? `\nConquistas: ${collectedRewards.map((reward) => reward.emoji).join(" ")}`
+        : "";
 
-    const grid = Array.from({ length: level.rows }, (_, row) =>
-      Array.from({ length: level.cols }, (_, col) => {
-        const key = `${col}-${row}`;
-        const clicked = clickedCells.includes(key);
-        const isTreasure =
-          treasure && col === treasure.col && row === treasure.row;
-        const isBomb = bombCells.some((bomb) => bomb.col === col && bomb.row === row);
+    const text = `Joguei o Encontre o Fim e esse eh o meu resultado.
+${resultLine}
+Tempo: ${formatTime(totalElapsed)}${rewardsLine}
 
-        if (gameOver && isBomb) return "💣";
-
-        if (found && isTreasure) {
-          if (level.secretType === "heart") return "❤️";
-          if (level.secretType === "boss") return "💀";
-          if (level.secretType === "alien") return "👽";
-          if (level.secretType === "ace") return "♠️";
-          if (level.secretType === "jackpot") return "🎰";
-          if (level.secretType === "bandit") return "🎖️";
-          return "🟨";
-        }
-
-        if (
-          currentLevel === 3 &&
-          hasKey &&
-          !giftUnlocked &&
-          levelThreeLockCell &&
-          col === levelThreeLockCell.col &&
-          row === levelThreeLockCell.row
-        ) {
-          return "🔒";
-        }
-
-        if (
-          currentLevel === 3 &&
-          giftOpenedThisRun &&
-          levelThreeLockCell &&
-          col === levelThreeLockCell.col &&
-          row === levelThreeLockCell.row
-        ) {
-          return "🎁";
-        }
-
-        if (clicked) return "🟦";
-        return "⬛";
-      }).join("")
-    ).join("\n");
-
-    const timeLine = level.isSecret ? "" : `Tempo: ${formatTime(totalElapsed)}\n`;
-    const overLine = gameOver ? "GAME OVER\n" : "";
-
-    const text = `Encontre o Fim ${level.name} ${result}
-${overLine}${timeLine}
-${grid}
+Voce consegue fazer melhor?
 
 ${SHARE_LINK}`;
 
@@ -2068,7 +2010,7 @@ ${SHARE_LINK}`;
     }
   }
 
-  const showTime = !level.isSecret && !finalCelebration;
+  const showTime = !finalCelebration;
   const showHint =
     !found &&
     clicks < MAX_CLICKS &&
@@ -2087,6 +2029,10 @@ ${SHARE_LINK}`;
     currentLevel !== 7 &&
     currentLevel !== 8 &&
     currentLevel !== 9;
+
+  const showRankingSave =
+    !finalCelebration &&
+    (showMainFinalMessage || (found && level.isSecret));
 
   const visibleLevels = LEVELS.filter((lvl) => {
     if (lvl.id <= 3) return true;
@@ -2688,14 +2634,24 @@ ${SHARE_LINK}`;
             </p>
           )}
 
-          {showMainFinalMessage && (
+          {showRankingSave && (
             <>
-              <p className="text-base sm:text-lg text-amber-300 font-semibold max-w-2xl">
-                {finalMessage}
-              </p>
-              <p className="text-green-400 text-lg sm:text-xl font-semibold">
-                Tempo final: {formatTime(totalElapsed)}
-              </p>
+              {showMainFinalMessage && (
+                <>
+                  <p className="text-base sm:text-lg text-amber-300 font-semibold max-w-2xl">
+                    {finalMessage}
+                  </p>
+                  <p className="text-green-400 text-lg sm:text-xl font-semibold">
+                    Tempo final: {formatTime(totalElapsed)}
+                  </p>
+                </>
+              )}
+
+              {found && level.isSecret && (
+                <p className="text-green-400 text-lg sm:text-xl font-semibold">
+                  Tempo final: {formatTime(totalElapsed)}
+                </p>
+              )}
 
               <div className="flex flex-col items-center gap-2 mt-4">
                 <input
@@ -2757,8 +2713,8 @@ ${SHARE_LINK}`;
 
           {found && level.secretType === "bandit" && !finalCelebration && (
             <p className="text-base sm:text-lg text-zinc-100 font-semibold max-w-2xl">
-              🎖️ O golpista foi encontrado.
-              <br />Agora ele ficou atrás das grades.
+              🕵️ O golpista foi encontrado.
+              <br />Agora ele ficou atras das grades.
             </p>
           )}
 
@@ -2942,7 +2898,9 @@ ${SHARE_LINK}`;
                                     : level.secretType === "jackpot"
                                       ? "bg-yellow-800/80 border border-yellow-600"
                                       : level.secretType === "bandit"
-                                        ? "bg-zinc-700 border border-white/20"
+                                        ? row % 2 === 0
+                                          ? "bg-zinc-300 text-black border border-zinc-400"
+                                          : "bg-zinc-700 border border-white/20"
                                         : "bg-sky-700"
                             : level.secretType === "heart"
                               ? "bg-rose-900 hover:bg-rose-800"
@@ -2969,11 +2927,9 @@ ${SHARE_LINK}`;
                                         ? "bg-yellow-500/90 hover:bg-yellow-400 border border-yellow-100"
                                         : "bg-amber-700/85 hover:bg-amber-600 border border-yellow-300/30"
                                       : level.secretType === "bandit"
-                                        ? isBanditBar
-                                          ? "bg-zinc-950 hover:bg-zinc-900 border border-zinc-500"
-                                          : row % 2 === 0
-                                            ? "bg-white/90 text-black hover:bg-white border border-zinc-300"
-                                            : "bg-zinc-900 hover:bg-zinc-800 border border-zinc-600"
+                                        ? row % 2 === 0
+                                          ? "bg-white/90 text-black hover:bg-white border border-zinc-300"
+                                          : "bg-zinc-900 hover:bg-zinc-800 border border-zinc-600"
                                         : "bg-zinc-700 hover:bg-zinc-600 rounded-lg"
                     }`}
                     style={{
@@ -2997,7 +2953,7 @@ ${SHARE_LINK}`;
                                 : level.secretType === "jackpot"
                                   ? "🎰"
                                   : level.secretType === "bandit"
-                                    ? "🎖️"
+                                    ? "🕵️"
                                     : "💎"}
                       </span>
                     ) : showGift ? (
