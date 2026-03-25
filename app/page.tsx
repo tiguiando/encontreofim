@@ -1572,10 +1572,12 @@ export default function Home() {
 
   function isEasterEggTriggerCell(levelId: number, cell: Cell) {
     const isFirstBlock = cell.col === 0 && cell.row === 0;
+    const isFifthTop = cell.col === 4 && cell.row === 0;
     const isSeventhTop = cell.col === 6 && cell.row === 0;
 
-    if (levelId === 1 && isFirstBlock) return true;
-    if ((levelId === 1 || levelId === 2 || levelId === 3) && isSeventhTop) return true;
+    if (levelId === 1 && (isFirstBlock || isFifthTop)) return true;
+    if (levelId === 2 && (isFirstBlock || isSeventhTop)) return true;
+    if (levelId === 3 && isSeventhTop) return true;
     return false;
   }
 
@@ -1802,6 +1804,7 @@ export default function Home() {
         setAlienSequenceStep(2);
         flashSignal("CLICK");
         completeSecretUnlock(6, setAlienSecretUnlocked);
+        return;
       } else if (!clickedAlienStepOne && !clickedAlienStepTwo) {
         setAlienSequenceStep(0);
       } else if (clickedAlienStepTwo && alienSequenceStep === 0) {
