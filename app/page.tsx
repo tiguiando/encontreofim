@@ -1758,6 +1758,8 @@ export default function Home() {
     const clickedBanditStepTwo = currentLevel === 2 && cell.col === 6 && cell.row === 0;
     const clickedBanditStepThree = currentLevel === 3 && cell.col === 0 && cell.row === 0;
 
+    let unlockedSecretThisClick = false;
+
     if (clickedHeartSecretTrigger && !heartSecretProgress.includes(currentLevel)) {
       const nextHeartSet = [...heartSecretProgress, currentLevel];
       setHeartSecretProgress(nextHeartSet);
@@ -1774,6 +1776,7 @@ export default function Home() {
 
       if (completedHeart) {
         completeSecretUnlock(4, setHeartSecretUnlocked);
+        unlockedSecretThisClick = true;
       }
     }
 
@@ -1793,6 +1796,7 @@ export default function Home() {
 
       if (completedBoss) {
         completeSecretUnlock(5, setBossSecretUnlocked);
+        unlockedSecretThisClick = true;
       }
     }
 
@@ -1803,7 +1807,7 @@ export default function Home() {
       } else if (clickedAlienStepTwo && alienSequenceStep === 1) {
         setAlienSequenceStep(2);
         completeSecretUnlock(6, setAlienSecretUnlocked);
-        return;
+        unlockedSecretThisClick = true;
       }
     }
 
@@ -1823,6 +1827,7 @@ export default function Home() {
 
       if (completedAce) {
         completeSecretUnlock(7, setAceSecretUnlocked);
+        unlockedSecretThisClick = true;
       }
     }
 
@@ -1842,6 +1847,7 @@ export default function Home() {
 
       if (completedJackpot) {
         completeSecretUnlock(8, setJackpotSecretUnlocked);
+        unlockedSecretThisClick = true;
       }
     }
 
@@ -1856,6 +1862,7 @@ export default function Home() {
         setBanditSecretStep(3);
         flashSignal("CLICK");
         completeSecretUnlock(9, setBanditSecretUnlocked);
+        unlockedSecretThisClick = true;
       } else if (clickedBanditStepOne || clickedBanditStepTwo) {
         setBanditSecretStep(clickedBanditStepOne ? 1 : 0);
       }
@@ -1904,7 +1911,7 @@ export default function Home() {
     } else {
       const nextClicks = clicks + 1;
 
-      if (triggeredSecretMessage) {
+      if (unlockedSecretThisClick || triggeredSecretMessage) {
         // mantém a mensagem secreta visível
       } else if (nextClicks >= MAX_CLICKS && distance === 1) {
         flashStatus("Era literalmente ao lado…");
