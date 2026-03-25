@@ -1754,7 +1754,7 @@ export default function Home() {
 
     const clickedBanditStepOne = currentLevel === 1 && cell.col === 0 && cell.row === 0;
     const clickedBanditStepTwo = currentLevel === 2 && cell.col === 6 && cell.row === 0;
-    const clickedBanditStepThree = currentLevel === 1 && cell.col === 0 && cell.row === 0;
+    const clickedBanditStepThree = currentLevel === 3 && cell.col === 0 && cell.row === 0;
 
     if (clickedHeartSecretTrigger && !heartSecretProgress.includes(currentLevel)) {
       const nextHeartSet = [...heartSecretProgress, currentLevel];
@@ -3092,6 +3092,28 @@ ${SHARE_LINK}`;
             }`}
           >
             Virar a carta ACE
+          </button>
+        )}
+
+        {!finalCelebration && jackpotSecretUnlocked && mainGameFinished && currentLevel !== 8 && (
+          <button
+            onClick={() => setCurrentLevel(8)}
+            className={`bg-yellow-400 hover:bg-yellow-300 text-black font-semibold transition ${
+              isMobile ? "px-4 py-2 text-sm rounded-lg" : "px-5 py-3 rounded-xl"
+            }`}
+          >
+            Apostar no JACKPOT
+          </button>
+        )}
+
+        {!finalCelebration && banditSecretUnlocked && mainGameFinished && currentLevel !== 9 && (
+          <button
+            onClick={() => setCurrentLevel(9)}
+            className={`bg-white hover:bg-zinc-200 text-black font-semibold transition border border-zinc-500 ${
+              isMobile ? "px-4 py-2 text-sm rounded-lg" : "px-5 py-3 rounded-xl"
+            }`}
+          >
+            Caçar o GOLPISTA
           </button>
         )}
 
