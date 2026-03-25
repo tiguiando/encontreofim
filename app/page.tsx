@@ -67,7 +67,7 @@ const LEVELS: LevelConfig[] = [
   { id: 6, name: "AREA 51", cols: 15, rows: 15, isSecret: true, secretType: "alien" },
   { id: 7, name: "ACE", cols: 15, rows: 15, isSecret: true, secretType: "ace" },
   { id: 8, name: "JACKPOT", cols: 15, rows: 15, isSecret: true, secretType: "jackpot" },
-  { id: 9, name: "GOLPISTA", cols: 15, rows: 15, isSecret: true, secretType: "bandit" },
+  { id: 9, name: "GOLPISTA", cols: 13, rows: 13, isSecret: true, secretType: "bandit" },
 ];
 
 const REWARD_META: Record<RewardId, Reward> = {
@@ -84,14 +84,14 @@ const REWARD_META: Record<RewardId, Reward> = {
 };
 
 const HINT_TEXTS: Record<HintEnvelopeId, string> = {
-  heart: "voce nao me conhece, mas gosto de ser o ultimo em todos os lugares",
-  alien: "existem objetos nao identificados naquela area que ja passou",
-  boss: "esse ser maligno tem um numero proprio",
-  ace: "essa jogo é AAA, pra mim sempre será o numero 1!",
-  jackpot: "voce pode acertar o jackpot se insistir",
-  bandit: "cuidado tem golpista escondido logo na entrada",
+  heart: "os ultimos serao os primeiros",
+  alien: "UFOS fora encontrados entre o primeiro e segundo vilarejo",
+  boss: "o mal tem um numero proprio dividido pelo mundo",
+  ace: "esse jogo e AAA, pra mim sempre sera o numero 1!",
+  jackpot: "se insistir sempre na sorte voce pode acertar o jackpot",
+  bandit: "cuidado tem golpista escondido e todas as regioes",
   memory:
-    "tenho memoria ruim, as vezes eu repito o nome do jogo varias vezes pra não esquecer.",
+    "sou esquecido e gosto de repetir o nome do jogo varias vezes pra lembrar.",
 };
 
 const HINT_CARD_EMOJI: Record<HintEnvelopeId, string> = {
@@ -428,18 +428,18 @@ const JACKPOT_PATTERN = [
   "000000010000000",
   "000000111000000",
   "000001111100000",
-  "001011111110100",
-  "011111111111110",
+  "000011111110000",
+  "000111111111000",
   "001111111111100",
+  "011111111111110",
   "111111111111111",
-  "001111111111100",
   "011111111111110",
-  "001011111110100",
+  "001111111111100",
+  "000111111111000",
+  "000011111110000",
   "000001111100000",
   "000000111000000",
   "000000010000000",
-  "000001010100000",
-  "000010000010000",
 ];
 
 function getJackpotOffsets(rows: number, cols: number) {
@@ -466,18 +466,19 @@ function isJackpotCoinCell(row: number, col: number, rows: number, cols: number)
   const c = col - colOffset;
 
   const coins = new Set([
-    "3-2", "3-12",
-    "4-1", "4-13",
-    "6-0", "6-14",
-    "8-1", "8-13",
-    "9-2", "9-12",
-    "13-5", "13-7", "13-9",
+    "2-7",
+    "4-5", "4-9",
+    "6-3", "6-11",
+    "7-7",
+    "8-4", "8-10",
+    "10-6", "10-8",
+    "12-7",
   ]);
 
   return coins.has(`${r}-${c}`);
 }
 
-const BANDIT_PATTERN = Array.from({ length: 15 }, () => "111111111111111");
+const BANDIT_PATTERN = Array.from({ length: 13 }, () => "1111111111111");
 
 function getBanditOffsets(rows: number, cols: number) {
   return {
@@ -501,8 +502,7 @@ function isBanditBarCell(row: number, col: number, rows: number, cols: number) {
   const { rowOffset, colOffset } = getBanditOffsets(rows, cols);
   const r = row - rowOffset;
   const c = col - colOffset;
-  const barCols = new Set([2, 5, 8, 11]);
-  return r >= 0 && r < 15 && c >= 0 && c < 15 && barCols.has(c);
+  return r >= 0 && r < 13 && c >= 0 && c < 13 && r % 2 === 1;
 }
 
 function getSpadeOffsets(rows: number, cols: number) {
@@ -1566,7 +1566,7 @@ export default function Home() {
 
   function completeSecretUnlock(levelId: number, setter: (value: boolean) => void) {
     setter(true);
-    flashStatus("voce desbloqueou um easter egg, conclua os niveis para abrir");
+    flashStatus("voce desbloqueou uma fase secreta, conclua os niveis para prosseguir.");
     setUnlockedLevels((prev) => (prev.includes(levelId) ? prev : [...prev, levelId]));
   }
 
@@ -1740,7 +1740,7 @@ export default function Home() {
       currentLevel === 1 && cell.col === 4 && cell.row === 0;
 
     const clickedAlienStepTwo =
-      currentLevel === 1 && cell.col === 0 && cell.row === 0;
+      currentLevel === 2 && cell.col === 0 && cell.row === 0;
 
     const clickedAceTrigger =
       !level.isSecret &&
@@ -1794,15 +1794,14 @@ export default function Home() {
       }
     }
 
-    if (!alienSecretUnlocked && currentLevel === 1) {
+    if (!alienSecretUnlocked) {
       if (clickedAlienStepOne && alienSequenceStep === 0) {
         setAlienSequenceStep(1);
         flashSignal("CLICK");
       } else if (clickedAlienStepTwo && alienSequenceStep === 1) {
         setAlienSequenceStep(2);
-        setAlienSecretUnlocked(true);
-        setUnlockedLevels((prev) => (prev.includes(6) ? prev : [...prev, 6]));
         flashSignal("CLICK");
+        completeSecretUnlock(6, setAlienSecretUnlocked);
       } else if (!clickedAlienStepOne && !clickedAlienStepTwo) {
         setAlienSequenceStep(0);
       } else if (clickedAlienStepTwo && alienSequenceStep === 0) {
@@ -1954,9 +1953,9 @@ export default function Home() {
 
       const totalLine = `\nTempo: ${formatTime(totalElapsed)}`;
 
-      const text = `Joguei o Encontre o Fim e esse eh o meu resultado.${totalLine}${rewardsLine}${respectLine}
+      const text = `Eu conclui o desafio no Encontre o FIM e esse e o meu resultado.${totalLine}${rewardsLine}${respectLine}
 
-Voce consegue fazer melhor?
+Vai encarar?
 
 ${SHARE_LINK}`;
 
@@ -1985,11 +1984,11 @@ ${SHARE_LINK}`;
         ? `\nConquistas: ${collectedRewards.map((reward) => reward.emoji).join(" ")}`
         : "";
 
-    const text = `Joguei o Encontre o Fim e esse eh o meu resultado.
+    const text = `Eu conclui o desafio no Encontre o FIM e esse e o meu resultado.
 ${resultLine}
 Tempo: ${formatTime(totalElapsed)}${rewardsLine}
 
-Voce consegue fazer melhor?
+Vai encarar?
 
 ${SHARE_LINK}`;
 
@@ -2404,7 +2403,7 @@ ${SHARE_LINK}`;
             <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
               <div>
                 <p className="text-[10px] tracking-[0.22em] text-zinc-400 uppercase">
-                  Você não está sozinho aqui...
+                  Você não está sozinho! Aqui suas conquistas valem mais do que o tempo.
                 </p>
                 <h2 className="text-base sm:text-lg font-bold mt-1">🏆 Ranking Global</h2>
               </div>
