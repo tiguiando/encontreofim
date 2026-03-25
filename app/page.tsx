@@ -2009,11 +2009,11 @@ export default function Home() {
 
     if (finalCelebration) {
       const rewardsLine =
-        collectedRewards.length > 0
-          ? `
+  collectedRewards.length > 0
+    ? `
 Conquistas: ${collectedRewards.map((reward) => reward.emoji).join(" ")}`
-          : "
-Conquistas: nenhuma ainda";
+    : `
+Conquistas: nenhuma ainda`;
 
       const respectLine = hasReward("speed")
         ? `
