@@ -1966,17 +1966,16 @@ export default function Home() {
     ? `\nConquistas: ${collectedRewards.map((reward) => reward.emoji).join(" ")}`
     : `\nConquistas: nenhuma ainda`;
 
-      const respectLine = hasReward("speed")
+const respectLine = hasReward("speed")
   ? `\nvoce tem o meu respeito. DEV`
   : "";
 
-      const totalLine = `
-Tempo: ${formatTime(totalElapsed)}`;
-      const threeLevelsLine =
-        mainRunCompletedTime !== null
-          ? `
-3 niveis em sequencia: ${formatTime(mainRunCompletedTime)}`
-          : "";
+const totalLine = `\nTempo: ${formatTime(totalElapsed)}`;
+
+const threeLevelsLine =
+  mainRunCompletedTime !== null
+    ? `\n3 niveis em sequencia: ${formatTime(mainRunCompletedTime)}`
+    : "";
 
       const text = `Eu conclui o desafio no Encontre o FIM e esse e o meu resultado.${totalLine}${threeLevelsLine}${rewardsLine}${respectLine}
 
