@@ -141,11 +141,11 @@ const FIM_PATTERN = [
 ];
 
 const INSTRUCTIONS_LINES = [
+  "Existem segredos escondidos entre os reinos",
   "Sua mente está presa em uma caixa",
-  "Existem segredos lógicos a serem desbloqueados entre os reinos",
   "Para sair, encontre o tesouro e siga os sinais no topo da tela",
   "Dizem que DEVon passou pelo reino seguinte ao primeiro, distribuindo cartas como quem deixa migalhas para os perdidos",
-  "Pense fora das caixas e avance com cautela",
+  "Avance com cautela",
   "Mas cuidado: nem toda pista foi feita para salvar você",
   "O fim nem sempre é o fim",
 ];
@@ -584,8 +584,13 @@ export default function Home() {
   const [isMobile, setIsMobile] = useState(false);
 
   const sessionStartRef = useRef<number | null>(null);
-  const speedRunStartRef = useRef<number | null>(null);
-  const speedRunSequenceRef = useRef<number[]>([]);
+
+  const rabbitRunStartRef = useRef<number | null>(null);
+  const rabbitRunSequenceRef = useRef<number[]>([]);
+
+  const trollRunStartRef = useRef<number | null>(null);
+  const trollRunSequenceRef = useRef<number[]>([]);
+
   const lastBossActionRef = useRef<number | null>(null);
   const lastInteractionRef = useRef<number>(Date.now());
   const lastKnockRef = useRef<number>(Date.now());
@@ -649,41 +654,41 @@ export default function Home() {
     }
   }
 
-  function resetSpeedRunSequence() {
-    speedRunStartRef.current = null;
-    speedRunSequenceRef.current = [];
+  function resetRabbitRunSequence() {
+    rabbitRunStartRef.current = null;
+    rabbitRunSequenceRef.current = [];
   }
 
-  function markSpeedRunProgress(levelCompleted: number) {
+  function startRabbitRun() {
+    rabbitRunStartRef.current = Date.now();
+    rabbitRunSequenceRef.current = [];
+  }
+
+  function markRabbitRunProgress(levelCompleted: number) {
     if (hasReward("speed")) return;
     if (levelCompleted < 1 || levelCompleted > 3) return;
+    if (!rabbitRunStartRef.current) return;
 
     const now = Date.now();
+    const elapsed = Math.floor((now - rabbitRunStartRef.current) / 1000);
+
+    if (elapsed > SPEED_RUN_LIMIT_SECONDS) {
+      resetRabbitRunSequence();
+      return;
+    }
+
+    const sequence = rabbitRunSequenceRef.current;
 
     if (levelCompleted === 1) {
-      speedRunStartRef.current = now;
-      speedRunSequenceRef.current = [1];
+      rabbitRunSequenceRef.current = [1];
       return;
     }
-
-    if (!speedRunStartRef.current) {
-      resetSpeedRunSequence();
-      return;
-    }
-
-    const elapsed = Math.floor((now - speedRunStartRef.current) / 1000);
-    if (elapsed > SPEED_RUN_LIMIT_SECONDS) {
-      resetSpeedRunSequence();
-      return;
-    }
-
-    const sequence = speedRunSequenceRef.current;
 
     if (levelCompleted === 2) {
       if (sequence.length === 1 && sequence[0] === 1) {
-        speedRunSequenceRef.current = [1, 2];
+        rabbitRunSequenceRef.current = [1, 2];
       } else {
-        resetSpeedRunSequence();
+        resetRabbitRunSequence();
       }
       return;
     }
@@ -694,7 +699,57 @@ export default function Home() {
           addReward("speed");
         }
       }
-      resetSpeedRunSequence();
+      resetRabbitRunSequence();
+    }
+  }
+
+  function resetTrollRunSequence() {
+    trollRunStartRef.current = null;
+    trollRunSequenceRef.current = [];
+  }
+
+  function startTrollRun() {
+    trollRunStartRef.current = Date.now();
+    trollRunSequenceRef.current = [];
+  }
+
+  function markTrollRunProgress(levelCompleted: number) {
+    if (!trollMode) return;
+    if (hasReward("brain")) return;
+    if (levelCompleted < 1 || levelCompleted > 3) return;
+    if (!trollRunStartRef.current) return;
+
+    const now = Date.now();
+    const elapsed = Math.floor((now - trollRunStartRef.current) / 1000);
+
+    if (elapsed > SPEED_RUN_LIMIT_SECONDS) {
+      resetTrollRunSequence();
+      return;
+    }
+
+    const sequence = trollRunSequenceRef.current;
+
+    if (levelCompleted === 1) {
+      trollRunSequenceRef.current = [1];
+      return;
+    }
+
+    if (levelCompleted === 2) {
+      if (sequence.length === 1 && sequence[0] === 1) {
+        trollRunSequenceRef.current = [1, 2];
+      } else {
+        resetTrollRunSequence();
+      }
+      return;
+    }
+
+    if (levelCompleted === 3) {
+      if (sequence.length === 2 && sequence[0] === 1 && sequence[1] === 2) {
+        if (elapsed < SPEED_RUN_LIMIT_SECONDS) {
+          addReward("brain");
+        }
+      }
+      resetTrollRunSequence();
     }
   }
 
@@ -860,7 +915,8 @@ export default function Home() {
     setHasDie(false);
     setDieUsed(false);
 
-    resetSpeedRunSequence();
+    resetRabbitRunSequence();
+    resetTrollRunSequence();
 
     const now = Date.now();
     lastBossActionRef.current = now;
@@ -935,6 +991,11 @@ export default function Home() {
     setGameOver(false);
     setGiftOpenedThisRun(false);
     setRevealedKeyCell(null);
+
+    if (currentLevel === 1 && !level.isSecret) {
+      startRabbitRun();
+      if (trollMode) startTrollRun();
+    }
 
     if (level.secretType === "heart") {
       setTreasure(randomHeartTreasure(level.rows, level.cols));
@@ -1086,7 +1147,7 @@ export default function Home() {
 
     startSessionTimer();
     touchInteraction();
-  }, [currentLevel, boardSeed, level.cols, level.rows, level.secretType]);
+  }, [currentLevel, boardSeed, level.cols, level.rows, level.secretType, trollMode]);
 
   useEffect(() => {
     startSessionTimer();
@@ -1184,6 +1245,7 @@ export default function Home() {
 
     if (next >= 10 && !trollMode) {
       setTrollMode(true);
+      startTrollRun();
       flashStatus("Modo troll ativado. As dicas agora mentem. CORRA!!!");
     }
   }
@@ -1554,14 +1616,12 @@ export default function Home() {
         setUnlockedLevels((prev) =>
           prev.includes(nextLevel) ? prev : [...prev, nextLevel]
         );
-        markSpeedRunProgress(currentLevel);
+        markRabbitRunProgress(currentLevel);
+        markTrollRunProgress(currentLevel);
       } else if (currentLevel === 3) {
-        markSpeedRunProgress(3);
+        markRabbitRunProgress(3);
+        markTrollRunProgress(3);
         setMainGameFinished(true);
-
-        if (trollMode && totalElapsed < 60 && !hasReward("brain")) {
-          addReward("brain");
-        }
       } else if (currentLevel === 4) {
         addReward("heart");
         setGameFinished(true);
