@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createClient } from "@supabase/supabase-js";
 
 type Cell = { col: number; row: number };
 
@@ -56,8 +57,7 @@ const MAX_CLICKS = 5;
 const SLEEP_LIMIT_SECONDS = 33 * 60 + 33;
 const IDLE_KNOCK_MS = 33_000;
 const MESSAGE_MS = 3000;
-const RABBIT_RUN_LIMIT_SECONDS = 10;
-const BRAIN_RUN_LIMIT_SECONDS = 60;
+const SPEED_RUN_LIMIT_SECONDS = 60;
 
 const LEVELS: LevelConfig[] = [
   { id: 1, name: "Nível 1", cols: 10, rows: 6 },
@@ -85,14 +85,14 @@ const REWARD_META: Record<RewardId, Reward> = {
 };
 
 const HINT_TEXTS: Record<HintEnvelopeId, string> = {
-  heart: "Sempre o último será o primeiro",
-  alien: "Você acredita em aliens? Eu ja vi um na área 51 entre o primeiro e segundo vilarejo",
-  boss: "O mal tem um número próprio dividido pelo mundo",
-  ace: "Esse jogo é AAA, pra mim sempre será o número 1!",
-  jackpot: "Eu sempre jogo meu número da sorte para acertar o jackpot",
-  bandit: "cuidado tem golpista (171) escondido e todas as regiões",
+  heart: "os ultimos serao os primeiros",
+  alien: "UFOS fora encontrados entre o primeiro e segundo vilarejo",
+  boss: "o mal tem um numero proprio dividido pelo mundo",
+  ace: "esse jogo e AAA, pra mim sempre sera o numero 1!",
+  jackpot: "se insistir sempre na sorte voce pode acertar o jackpot",
+  bandit: "cuidado tem golpista escondido e todas as regioes",
   memory:
-    "Sou esquecido, eu gosto de repetir o nome do jogo várias vezes para entrar na cabeça",
+    "sou esquecido e gosto de repetir o nome do jogo varias vezes pra lembrar.",
 };
 
 const HINT_CARD_EMOJI: Record<HintEnvelopeId, string> = {
@@ -686,6 +686,9 @@ function getFinalBoardEmoji(row: number, col: number, theme: FinalThemeId) {
 export default function Home() {
   const [boardSeed, setBoardSeed] = useState(0);
 
+  const [onlineCount, setOnlineCount] = useState(1);
+  const onlineSessionIdRef = useRef<string>("");
+
   const [currentLevel, setCurrentLevel] = useState(1);
   const [unlockedLevels, setUnlockedLevels] = useState<number[]>([1]);
 
@@ -703,7 +706,6 @@ export default function Home() {
   const [mainGameFinished, setMainGameFinished] = useState(false);
   const [sleepMode, setSleepMode] = useState(false);
   const [totalElapsed, setTotalElapsed] = useState(0);
-  const [mainRunCompletedTime, setMainRunCompletedTime] = useState<number | null>(null);
   const [gameOver, setGameOver] = useState(false);
 
   const [heartSecretProgress, setHeartSecretProgress] = useState<number[]>([]);
@@ -779,16 +781,22 @@ export default function Home() {
   const idleTimeoutRef = useRef<number | null>(null);
   const statusTimeoutRef = useRef<number | null>(null);
 
+  const supabaseClient = useMemo(() => {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    if (!url || !key) return null;
+    return createClient(url, key);
+  }, []);
+
   const level = useMemo(
     () => LEVELS.find((lvl) => lvl.id === currentLevel)!,
     [currentLevel]
   );
 
-  const mainRunDisplayTime = mainRunCompletedTime ?? totalElapsed;
-
   const finalMessage = useMemo(
-    () => getFinalMessage(mainRunDisplayTime),
-    [mainRunDisplayTime]
+    () => getFinalMessage(totalElapsed),
+    [totalElapsed]
   );
 
   const displayRanking = useMemo(() => ranking.slice(0, 10), [ranking]);
@@ -839,11 +847,6 @@ export default function Home() {
     }
   }
 
-  function getSessionElapsedSeconds() {
-    if (!sessionStartRef.current) return 0;
-    return Math.floor((Date.now() - sessionStartRef.current) / 1000);
-  }
-
   function resetRabbitRunSequence() {
     rabbitRunStartRef.current = null;
     rabbitRunSequenceRef.current = [];
@@ -862,7 +865,7 @@ export default function Home() {
     const now = Date.now();
     const elapsed = Math.floor((now - rabbitRunStartRef.current) / 1000);
 
-    if (elapsed > RABBIT_RUN_LIMIT_SECONDS) {
+    if (elapsed > SPEED_RUN_LIMIT_SECONDS) {
       resetRabbitRunSequence();
       return;
     }
@@ -885,7 +888,7 @@ export default function Home() {
 
     if (levelCompleted === 3) {
       if (sequence.length === 2 && sequence[0] === 1 && sequence[1] === 2) {
-        if (elapsed < RABBIT_RUN_LIMIT_SECONDS) {
+        if (elapsed < SPEED_RUN_LIMIT_SECONDS) {
           addReward("speed");
         }
       }
@@ -912,7 +915,7 @@ export default function Home() {
     const now = Date.now();
     const elapsed = Math.floor((now - trollRunStartRef.current) / 1000);
 
-    if (elapsed > BRAIN_RUN_LIMIT_SECONDS) {
+    if (elapsed > SPEED_RUN_LIMIT_SECONDS) {
       resetTrollRunSequence();
       return;
     }
@@ -935,7 +938,7 @@ export default function Home() {
 
     if (levelCompleted === 3) {
       if (sequence.length === 2 && sequence[0] === 1 && sequence[1] === 2) {
-        if (elapsed < BRAIN_RUN_LIMIT_SECONDS) {
+        if (elapsed < SPEED_RUN_LIMIT_SECONDS) {
           addReward("brain");
         }
       }
@@ -1003,11 +1006,9 @@ export default function Home() {
   async function handleSaveRanking() {
     if (!playerName.trim() || rankingSaved) return;
 
-    const rankingTime = showMainFinalMessage ? (mainRunCompletedTime ?? totalElapsed) : totalElapsed;
-
     const newEntry = {
       playerName: playerName.trim().slice(0, 12),
-      totalTime: rankingTime,
+      totalTime: totalElapsed,
       secrets: collectedRewards.map((reward) => reward.emoji),
     };
 
@@ -1067,7 +1068,6 @@ export default function Home() {
     setGameFinished(false);
     setMainGameFinished(false);
     setSleepMode(false);
-    setMainRunCompletedTime(null);
     setGameOver(false);
 
     setHeartSecretProgress([]);
@@ -1168,6 +1168,52 @@ export default function Home() {
 
     loadRanking();
   }, []);
+
+  useEffect(() => {
+    if (!supabaseClient) return;
+
+    const sessionId =
+      globalThis.crypto?.randomUUID?.() ??
+      `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+    onlineSessionIdRef.current = sessionId;
+
+    let cancelled = false;
+
+    const updatePresence = async () => {
+      try {
+        const nowIso = new Date().toISOString();
+
+        await supabaseClient.from("online_players").upsert({
+          id: sessionId,
+          last_seen: nowIso,
+        });
+
+        const activeAfterIso = new Date(Date.now() - 30000).toISOString();
+
+        const { count } = await supabaseClient
+          .from("online_players")
+          .select("*", { count: "exact", head: true })
+          .gt("last_seen", activeAfterIso);
+
+        if (!cancelled && typeof count === "number") {
+          setOnlineCount(Math.max(1, count));
+        }
+      } catch {
+        if (!cancelled) {
+          setOnlineCount(1);
+        }
+      }
+    };
+
+    updatePresence();
+    const interval = window.setInterval(updatePresence, 15000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [supabaseClient]);
 
   useEffect(() => {
     const bombCount =
@@ -1898,10 +1944,8 @@ export default function Home() {
         markRabbitRunProgress(currentLevel);
         markTrollRunProgress(currentLevel);
       } else if (currentLevel === 3) {
-        const completedRunTime = getSessionElapsedSeconds();
         markRabbitRunProgress(3);
         markTrollRunProgress(3);
-        setMainRunCompletedTime(completedRunTime);
         setMainGameFinished(true);
       } else if (currentLevel === 4) {
         addReward("heart");
@@ -1964,19 +2008,15 @@ export default function Home() {
       const rewardsLine =
         collectedRewards.length > 0
           ? `\nConquistas: ${collectedRewards.map((reward) => reward.emoji).join(" ")}`
-          : `\nConquistas: nenhuma ainda`;
+          : "\nConquistas: nenhuma ainda";
 
       const respectLine = hasReward("speed")
         ? `\nvoce tem o meu respeito. DEV`
         : "";
 
       const totalLine = `\nTempo: ${formatTime(totalElapsed)}`;
-      const threeLevelsLine =
-        mainRunCompletedTime !== null
-          ? `\n3 niveis em sequencia: ${formatTime(mainRunCompletedTime)}`
-          : "";
 
-      const text = `Eu conclui o desafio no Encontre o FIM e esse e o meu resultado.${totalLine}${threeLevelsLine}${rewardsLine}${respectLine}
+      const text = `Eu conclui o desafio no Encontre o FIM e esse e o meu resultado.${totalLine}${rewardsLine}${respectLine}
 
 Vai encarar?
 
@@ -2001,24 +2041,15 @@ ${SHARE_LINK}`;
       return;
     }
 
-    const shareTime = showMainFinalMessage ? (mainRunCompletedTime ?? totalElapsed) : totalElapsed;
-    const resultLine = showMainFinalMessage
-      ? "Resultado: conclui os 3 niveis"
-      : found
-        ? "Resultado: vitoria"
-        : gameOver
-          ? "Resultado: game over"
-          : "Resultado: tentativa encerrada";
-    const timeLabel = showMainFinalMessage ? "3 niveis em sequencia" : "Tempo";
+    const resultLine = found ? "Resultado: vitoria" : gameOver ? "Resultado: game over" : "Resultado: tentativa encerrada";
     const rewardsLine =
       collectedRewards.length > 0
-        ? `
-Conquistas: ${collectedRewards.map((reward) => reward.emoji).join(" ")}`
+        ? `\nConquistas: ${collectedRewards.map((reward) => reward.emoji).join(" ")}`
         : "";
 
     const text = `Eu conclui o desafio no Encontre o FIM e esse e o meu resultado.
 ${resultLine}
-${timeLabel}: ${formatTime(shareTime)}${rewardsLine}
+Tempo: ${formatTime(totalElapsed)}${rewardsLine}
 
 Vai encarar?
 
@@ -2554,11 +2585,7 @@ ${SHARE_LINK}`;
             </p>
           )}
 
-          {showTime && (
-            <p className={isMobile ? "text-base" : "text-lg"}>
-              {showMainFinalMessage ? "Cronometro geral" : "Tempo"}: {formatTime(totalElapsed)}
-            </p>
-          )}
+          {showTime && <p className={isMobile ? "text-base" : "text-lg"}>Tempo: {formatTime(totalElapsed)}</p>}
 
           {!finalCelebration &&
             level.secretType === "boss" &&
@@ -2677,7 +2704,7 @@ ${SHARE_LINK}`;
                     {finalMessage}
                   </p>
                   <p className="text-green-400 text-lg sm:text-xl font-semibold">
-                    Completou os 3 niveis em {formatTime(mainRunDisplayTime)}
+                    Tempo final: {formatTime(totalElapsed)}
                   </p>
                 </>
               )}
@@ -3016,7 +3043,7 @@ ${SHARE_LINK}`;
               isMobile ? "px-4 py-2 text-sm rounded-lg" : "px-5 py-3 rounded-xl"
             }`}
           >
-            Mais uma vez
+            Resetar partida
           </button>
 
           {canShare && (
@@ -3183,19 +3210,6 @@ ${SHARE_LINK}`;
         </div>
       </div>
 
-      {!finalCelebration && (
-        <button
-          onClick={() => setShowRankingModal(true)}
-          className={`fixed left-1/2 -translate-x-1/2 z-40 rounded-full border border-zinc-700 bg-zinc-900/80 hover:bg-zinc-800 flex items-center justify-center transition shadow-lg ${
-            isMobile ? "bottom-9 w-10 h-10 text-lg" : "bottom-10 w-11 h-11 text-xl"
-          }`}
-          title="Abrir ranking"
-          aria-label="Abrir ranking"
-        >
-          🏆
-        </button>
-      )}
-
       <div className="fixed bottom-2 left-1/2 -translate-x-1/2 z-40 flex items-center gap-4">
         <button
           onClick={() => setShowInstructions(true)}
@@ -3213,28 +3227,6 @@ ${SHARE_LINK}`;
           HELP the DEV
         </a>
       </div>
-    
-{/* ONLINE + RANKING FIX */}
-{!finalCelebration && (
-  <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3">
-    <div
-      className="px-3 py-2 rounded-full bg-zinc-900 border border-zinc-700 text-xs text-white flex items-center gap-2 shadow-lg"
-      title="Jogadores online"
-    >
-      <span>👤</span>
-      <span>{onlineCount ?? 1}</span>
-    </div>
-
-    <button
-      onClick={() => setShowRankingModal(true)}
-      className="w-12 h-12 rounded-full bg-zinc-900 border border-zinc-700 hover:bg-zinc-800 transition flex items-center justify-center shadow-lg"
-      title="Abrir ranking"
-    >
-      🏆
-    </button>
-  </div>
-)}
-
-</main>
+    </main>
   );
 }
