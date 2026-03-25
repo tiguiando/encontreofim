@@ -1962,20 +1962,19 @@ export default function Home() {
 
     if (finalCelebration) {
       const rewardsLine =
-  collectedRewards.length > 0
-    ? `\nConquistas: ${collectedRewards.map((reward) => reward.emoji).join(" ")}`
-    : `\nConquistas: nenhuma ainda`;
+        collectedRewards.length > 0
+          ? `\nConquistas: ${collectedRewards.map((reward) => reward.emoji).join(" ")}`
+          : `\nConquistas: nenhuma ainda`;
 
-const respectLine = hasReward("speed")
-  ? `\nvoce tem o meu respeito. DEV`
-  : "";
+      const respectLine = hasReward("speed")
+        ? `\nvoce tem o meu respeito. DEV`
+        : "";
 
-const totalLine = `\nTempo: ${formatTime(totalElapsed)}`;
-
-const threeLevelsLine =
-  mainRunCompletedTime !== null
-    ? `\n3 niveis em sequencia: ${formatTime(mainRunCompletedTime)}`
-    : "";
+      const totalLine = `\nTempo: ${formatTime(totalElapsed)}`;
+      const threeLevelsLine =
+        mainRunCompletedTime !== null
+          ? `\n3 niveis em sequencia: ${formatTime(mainRunCompletedTime)}`
+          : "";
 
       const text = `Eu conclui o desafio no Encontre o FIM e esse e o meu resultado.${totalLine}${threeLevelsLine}${rewardsLine}${respectLine}
 
@@ -2678,7 +2677,7 @@ ${SHARE_LINK}`;
                     {finalMessage}
                   </p>
                   <p className="text-green-400 text-lg sm:text-xl font-semibold">
-                    3 niveis em sequencia: {formatTime(mainRunDisplayTime)}
+                    Completou os 3 niveis em {formatTime(mainRunDisplayTime)}
                   </p>
                 </>
               )}
@@ -3017,7 +3016,7 @@ ${SHARE_LINK}`;
               isMobile ? "px-4 py-2 text-sm rounded-lg" : "px-5 py-3 rounded-xl"
             }`}
           >
-            Resetar partida
+            Mais uma vez
           </button>
 
           {canShare && (
