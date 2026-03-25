@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 type Cell = { col: number; row: number };
 
-type SecretType = "heart" | "boss" | "alien" | "ace" | "jackpot" | "bandit";
+type SecretType = "heart" | "boss" | "alien" | "ace";
 
 type LevelConfig = {
   id: number;
@@ -20,8 +20,6 @@ type RewardId =
   | "boss"
   | "alien"
   | "ace"
-  | "jackpot"
-  | "bandit"
   | "speed"
   | "gift"
   | "slow"
@@ -32,7 +30,7 @@ type Reward = {
   emoji: string;
 };
 
-type HintEnvelopeId = "heart" | "alien" | "boss" | "ace" | "jackpot" | "bandit" | "memory";
+type HintEnvelopeId = "heart" | "alien" | "boss" | "ace" | "memory";
 
 type HintEnvelope = {
   id: HintEnvelopeId;
@@ -40,7 +38,7 @@ type HintEnvelope = {
   text: string;
 };
 
-type FinalThemeId = "speed" | "slow" | "boss" | "alien" | "heart" | "ace" | "brain" | "jackpot" | "bandit" | "default";
+type FinalThemeId = "speed" | "slow" | "boss" | "alien" | "heart" | "ace" | "brain" | "default";
 
 type RankingEntry = {
   name: string;
@@ -66,8 +64,6 @@ const LEVELS: LevelConfig[] = [
   { id: 5, name: "FINAL BOSS", cols: 15, rows: 13, isSecret: true, secretType: "boss" },
   { id: 6, name: "AREA 51", cols: 15, rows: 15, isSecret: true, secretType: "alien" },
   { id: 7, name: "ACE", cols: 15, rows: 15, isSecret: true, secretType: "ace" },
-  { id: 8, name: "777", cols: 15, rows: 15, isSecret: true, secretType: "jackpot" },
-  { id: 9, name: "171", cols: 15, rows: 15, isSecret: true, secretType: "bandit" },
 ];
 
 const REWARD_META: Record<RewardId, Reward> = {
@@ -75,8 +71,6 @@ const REWARD_META: Record<RewardId, Reward> = {
   boss: { id: "boss", emoji: "💀" },
   alien: { id: "alien", emoji: "👽" },
   ace: { id: "ace", emoji: "♠️" },
-  jackpot: { id: "jackpot", emoji: "🎰" },
-  bandit: { id: "bandit", emoji: "🎖️" },
   speed: { id: "speed", emoji: "🐇" },
   gift: { id: "gift", emoji: "🎁" },
   slow: { id: "slow", emoji: "🐢" },
@@ -84,14 +78,12 @@ const REWARD_META: Record<RewardId, Reward> = {
 };
 
 const HINT_TEXTS: Record<HintEnvelopeId, string> = {
-  heart: "pode ir na frente, eu gosto de insistir em ser o ultimo.",
+  heart: "voce nao me conhece, mas gosto de ser o ultimo em todos os lugares",
   alien: "existem objetos nao identificados naquela area que ja passou",
   boss: "esse ser maligno tem um numero proprio",
-  ace: "esse jogo é AAA, pra mim sempre sera o numero 1!",
-  jackpot: "voce pode acertar o jackpot se insistir",
-  bandit: "cuidado tem golpista escondido logo na entrada",
+  ace: "essa jogo é AAA, pra mim sempre será o numero 1!",
   memory:
-    "tenho memoria ruim, as vezes eu repito o nome do jogo varias vezes pra nao esquecer.",
+    "tenho memoria ruim, as vezes eu repito o nome do jogo varias vezes pra não esquecer.",
 };
 
 const HINT_CARD_EMOJI: Record<HintEnvelopeId, string> = {
@@ -99,8 +91,6 @@ const HINT_CARD_EMOJI: Record<HintEnvelopeId, string> = {
   alien: "💌",
   boss: "💌",
   ace: "💌",
-  jackpot: "💌",
-  bandit: "💌",
   memory: "💌",
 };
 
@@ -141,78 +131,6 @@ const FINAL_MESSAGES = [
 ];
 
 const FIREWORKS = ["🎆", "🎇", "✨", "🎉"];
-
-function getFirstFinishThemeReward(rewards: Reward[]) {
-  const themeOrder: RewardId[] = [
-    "speed",
-    "brain",
-    "slow",
-    "boss",
-    "alien",
-    "heart",
-    "ace",
-    "jackpot",
-    "bandit",
-  ];
-  return rewards.find((reward) => themeOrder.includes(reward.id) && reward.id !== "gift") ?? null;
-}
-
-function getFinalCelebrationTheme(rewards: Reward[]) {
-  const firstReward = getFirstFinishThemeReward(rewards);
-
-  switch (firstReward?.id) {
-    case "speed":
-      return {
-        emojis: ["⚡", "🎆", "🎇", "⚡", "✨"],
-        message: "Você correu mais rápido que o tempo.",
-      };
-    case "brain":
-      return {
-        emojis: ["🧠", "🎆", "🎇", "🧠", "✨"],
-        message: "Você não venceu o jogo… você entendeu ele.",
-      };
-    case "slow":
-      return {
-        emojis: ["🍕", "🍔", "🍟", "🎆", "🎇"],
-        message: "Você aproveitou cada passo.",
-      };
-    case "boss":
-      return {
-        emojis: ["🔥", "🎆", "🔥", "🎇", "✨"],
-        message: "Você enfrentou o fim… e venceu.",
-      };
-    case "alien":
-      return {
-        emojis: ["🛸", "🎆", "👽", "🎇", "🛸"],
-        message: "Você descobriu o que não deveria.",
-      };
-    case "heart":
-      return {
-        emojis: ["❤️", "💖", "🎆", "💜", "🎇"],
-        message: "Você sentiu o jogo.",
-      };
-    case "ace":
-      return {
-        emojis: ["♠️", "♥️", "♦️", "♣️", "🎆"],
-        message: "Você dominou tudo.",
-      };
-    case "jackpot":
-      return {
-        emojis: ["🎰", "🪙", "💰", "🎆", "🎇"],
-        message: "JACKPOT. Hoje a casa perdeu.",
-      };
-    case "bandit":
-      return {
-        emojis: ["🎖️", "🚨", "🔒", "🎆", "🚔"],
-        message: "Você caçou o golpista e saiu como herói.",
-      };
-    default:
-      return {
-        emojis: FIREWORKS,
-        message: "Você reuniu os segredos. Agora é só celebrar e compartilhar.",
-      };
-  }
-}
 const LIGHTNING_EMOJIS = ["⚡", "⚡", "⚡"];
 const FOOD_EMOJIS = ["🍕", "🍔", "🍟"];
 const FIRE_EMOJIS = ["🔥", "🔥", "🔥"];
@@ -525,99 +443,6 @@ function isSpadeStemCell(row: number, col: number, rows: number, cols: number) {
   return stem.has(`${r}-${c}`);
 }
 
-
-const JACKPOT_PATTERN = [
-  "000000010000000",
-  "000000111000000",
-  "000001111100000",
-  "100011111110001",
-  "110111111111011",
-  "011111111111110",
-  "001111111111100",
-  "111111111111111",
-  "001111111111100",
-  "011111111111110",
-  "110111111111011",
-  "100011111110001",
-  "000001111100000",
-  "000000111000000",
-  "000000010000000",
-];
-
-function getJackpotOffsets(rows: number, cols: number) {
-  return {
-    rowOffset: Math.floor((rows - JACKPOT_PATTERN.length) / 2),
-    colOffset: Math.floor((cols - JACKPOT_PATTERN[0].length) / 2),
-  };
-}
-
-function isJackpotCell(row: number, col: number, rows: number, cols: number) {
-  const { rowOffset, colOffset } = getJackpotOffsets(rows, cols);
-  const r = row - rowOffset;
-  const c = col - colOffset;
-  if (r < 0 || r >= JACKPOT_PATTERN.length || c < 0 || c >= JACKPOT_PATTERN[0].length) {
-    return false;
-  }
-  return JACKPOT_PATTERN[r][c] === "1";
-}
-
-function isJackpotCoinCell(row: number, col: number, rows: number, cols: number) {
-  const { rowOffset, colOffset } = getJackpotOffsets(rows, cols);
-  const r = row - rowOffset;
-  const c = col - colOffset;
-  const coins = new Set([
-    "3-7", "4-4", "4-10", "5-7", "6-3", "6-11", "7-7", "8-5", "8-9", "10-7", "11-4", "11-10"
-  ]);
-  return coins.has(`${r}-${c}`);
-}
-
-const BANDIT_PATTERN = [
-  "111111111111111",
-  "110011001100111",
-  "111111111111111",
-  "100110011001101",
-  "111111111111111",
-  "110011001100111",
-  "111111111111111",
-  "100110011001101",
-  "111111111111111",
-  "110011001100111",
-  "111111111111111",
-  "100110011001101",
-  "111111111111111",
-  "110011001100111",
-  "111111111111111",
-];
-
-function getBanditOffsets(rows: number, cols: number) {
-  return {
-    rowOffset: Math.floor((rows - BANDIT_PATTERN.length) / 2),
-    colOffset: Math.floor((cols - BANDIT_PATTERN[0].length) / 2),
-  };
-}
-
-function isBanditCell(row: number, col: number, rows: number, cols: number) {
-  const { rowOffset, colOffset } = getBanditOffsets(rows, cols);
-  const r = row - rowOffset;
-  const c = col - colOffset;
-  if (r < 0 || r >= BANDIT_PATTERN.length || c < 0 || c >= BANDIT_PATTERN[0].length) {
-    return false;
-  }
-  return BANDIT_PATTERN[r][c] === "1";
-}
-
-function isBanditBarCell(row: number, col: number, rows: number, cols: number) {
-  const { rowOffset, colOffset } = getBanditOffsets(rows, cols);
-  const r = row - rowOffset;
-  const c = col - colOffset;
-  const bars = new Set([
-    "0-2", "1-2", "2-2", "3-2", "4-2", "5-2", "6-2", "7-2", "8-2", "9-2", "10-2", "11-2", "12-2", "13-2", "14-2",
-    "0-7", "1-7", "2-7", "3-7", "4-7", "5-7", "6-7", "7-7", "8-7", "9-7", "10-7", "11-7", "12-7", "13-7", "14-7",
-    "0-12", "1-12", "2-12", "3-12", "4-12", "5-12", "6-12", "7-12", "8-12", "9-12", "10-12", "11-12", "12-12", "13-12", "14-12"
-  ]);
-  return bars.has(`${r}-${c}`);
-}
-
 function randomHeartTreasure(rows: number, cols: number): Cell {
   const valid: Cell[] = [];
   for (let row = 0; row < rows; row++) {
@@ -658,31 +483,11 @@ function randomAceTreasure(rows: number, cols: number): Cell {
   return valid[Math.floor(Math.random() * valid.length)];
 }
 
-function randomJackpotTreasure(rows: number, cols: number): Cell {
-  const valid: Cell[] = [];
-  for (let row = 0; row < rows; row++) {
-    for (let col = 0; col < cols; col++) {
-      if (isJackpotCell(row, col, rows, cols)) valid.push({ row, col });
-    }
-  }
-  return valid[Math.floor(Math.random() * valid.length)];
-}
-
-function randomBanditTreasure(rows: number, cols: number): Cell {
-  const valid: Cell[] = [];
-  for (let row = 0; row < rows; row++) {
-    for (let col = 0; col < cols; col++) {
-      if (isBanditCell(row, col, rows, cols)) valid.push({ row, col });
-    }
-  }
-  return valid[Math.floor(Math.random() * valid.length)];
-}
-
 function getLevelOneBlocked(cols: number, rows: number) {
   return new Set<string>([
     `${cols - 1}-${rows - 1}`,
-    "6-0",
     "5-0",
+    "8-0",
     "4-0",
     "0-0",
   ]);
@@ -711,13 +516,11 @@ function isVisibleCellForLevel(level: LevelConfig, row: number, col: number) {
   if (level.secretType === "boss") return isSkullCell(row, col, level.rows, level.cols);
   if (level.secretType === "alien") return isAlienCell(row, col, level.rows, level.cols);
   if (level.secretType === "ace") return isSpadeCell(row, col, level.rows, level.cols);
-  if (level.secretType === "jackpot") return isJackpotCell(row, col, level.rows, level.cols);
-  if (level.secretType === "bandit") return isBanditCell(row, col, level.rows, level.cols);
   return true;
 }
 
 function getFinalThemeReward(rewards: Reward[]): FinalThemeId {
-  const supportedOrder: RewardId[] = ["speed", "slow", "boss", "alien", "heart", "ace", "brain", "jackpot", "bandit"];
+  const supportedOrder: RewardId[] = ["speed", "slow", "boss", "alien", "heart", "ace", "brain"];
   const firstSupported = rewards.find((reward) => supportedOrder.includes(reward.id));
 
   if (!firstSupported) return "default";
@@ -732,8 +535,6 @@ function getFinalThemeEmojis(theme: FinalThemeId) {
   if (theme === "heart") return HEART_FINAL_EMOJIS;
   if (theme === "ace") return ACE_FINAL_EMOJIS;
   if (theme === "brain") return BRAIN_FINAL_EMOJIS;
-  if (theme === "jackpot") return ["🎰", "🪙", "💰"];
-  if (theme === "bandit") return ["🎖️", "🚨", "🔒"];
   return [];
 }
 
@@ -745,8 +546,6 @@ function getFinalThemePhrase(theme: FinalThemeId) {
   if (theme === "heart") return "Você sentiu o jogo.";
   if (theme === "ace") return "Você dominou tudo.";
   if (theme === "brain") return "Você não venceu o jogo… você entendeu ele.";
-  if (theme === "jackpot") return "JACKPOT. Hoje a casa perdeu.";
-  if (theme === "bandit") return "Você caçou o golpista e saiu como herói.";
   return "Você reuniu os segredos. Agora é só celebrar e compartilhar.";
 }
 
@@ -782,23 +581,17 @@ export default function Home() {
   const [totalElapsed, setTotalElapsed] = useState(0);
   const [gameOver, setGameOver] = useState(false);
 
-  const [heartSecretProgress, setHeartSecretProgress] = useState(0);
+  const [heartSecretProgress, setHeartSecretProgress] = useState<number[]>([]);
   const [heartSecretUnlocked, setHeartSecretUnlocked] = useState(false);
 
-  const [bossSecretProgress, setBossSecretProgress] = useState(0);
+  const [bossSecretProgress, setBossSecretProgress] = useState<number[]>([]);
   const [bossSecretUnlocked, setBossSecretUnlocked] = useState(false);
 
   const [alienSequenceStep, setAlienSequenceStep] = useState(0);
   const [alienSecretUnlocked, setAlienSecretUnlocked] = useState(false);
 
-  const [aceSecretProgress, setAceSecretProgress] = useState(0);
+  const [aceSecretProgress, setAceSecretProgress] = useState<number[]>([]);
   const [aceSecretUnlocked, setAceSecretUnlocked] = useState(false);
-
-  const [jackpotSecretProgress, setJackpotSecretProgress] = useState(0);
-  const [jackpotSecretUnlocked, setJackpotSecretUnlocked] = useState(false);
-
-  const [banditSecretProgress, setBanditSecretProgress] = useState(0);
-  const [banditSecretUnlocked, setBanditSecretUnlocked] = useState(false);
 
   const [titleClicks, setTitleClicks] = useState(0);
   const [trollMode, setTrollMode] = useState(false);
@@ -863,10 +656,6 @@ export default function Home() {
   const finalMessage = useMemo(
     () => getFinalMessage(totalElapsed),
     [totalElapsed]
-  );
-  const finalCelebrationTheme = useMemo(
-    () => getFinalCelebrationTheme(collectedRewards),
-    [collectedRewards]
   );
 
   const displayRanking = useMemo(() => ranking.slice(0, 10), [ranking]);
@@ -1140,21 +929,17 @@ export default function Home() {
     setSleepMode(false);
     setGameOver(false);
 
-    setHeartSecretProgress(0);
+    setHeartSecretProgress([]);
     setHeartSecretUnlocked(false);
 
-    setBossSecretProgress(0);
+    setBossSecretProgress([]);
     setBossSecretUnlocked(false);
 
     setAlienSequenceStep(0);
     setAlienSecretUnlocked(false);
 
-    setAceSecretProgress(0);
+    setAceSecretProgress([]);
     setAceSecretUnlocked(false);
-    setJackpotSecretProgress(0);
-    setJackpotSecretUnlocked(false);
-    setBanditSecretProgress(0);
-    setBanditSecretUnlocked(false);
 
     setGiftOpenedThisRun(false);
     setBombCells([]);
@@ -1293,20 +1078,6 @@ export default function Home() {
       setBombCells([]);
       setLevelTwoHintCells([]);
       setDieCell(null);
-    } else if (level.secretType === "jackpot") {
-      setTreasure(randomJackpotTreasure(level.rows, level.cols));
-      setLevelOneKeyCells([]);
-      setLevelThreeLockCell(null);
-      setBombCells([]);
-      setLevelTwoHintCells([]);
-      setDieCell(null);
-    } else if (level.secretType === "bandit") {
-      setTreasure(randomBanditTreasure(level.rows, level.cols));
-      setLevelOneKeyCells([]);
-      setLevelThreeLockCell(null);
-      setBombCells([]);
-      setLevelTwoHintCells([]);
-      setDieCell(null);
     } else {
       if (currentLevel === 1) {
         const blocked = getLevelOneBlocked(level.cols, level.rows);
@@ -1363,8 +1134,6 @@ export default function Home() {
         if (!alienSecretUnlocked) hintPool.push("alien", "alien", "alien");
         if (!bossSecretUnlocked) hintPool.push("boss", "boss", "boss");
         if (!aceSecretUnlocked) hintPool.push("ace", "ace", "ace");
-        if (!jackpotSecretUnlocked) hintPool.push("jackpot", "jackpot", "jackpot");
-        if (!banditSecretUnlocked) hintPool.push("bandit", "bandit", "bandit");
 
         hintPool.push("memory", "memory", "memory", "memory", "memory");
 
@@ -1663,8 +1432,6 @@ export default function Home() {
     if (level.secretType === "boss" && !isSkullCell(cell.row, cell.col, level.rows, level.cols)) return;
     if (level.secretType === "alien" && !isAlienCell(cell.row, cell.col, level.rows, level.cols)) return;
     if (level.secretType === "ace" && !isSpadeCell(cell.row, cell.col, level.rows, level.cols)) return;
-    if (level.secretType === "jackpot" && !isJackpotCell(cell.row, cell.col, level.rows, level.cols)) return;
-    if (level.secretType === "bandit" && !isBanditCell(cell.row, cell.col, level.rows, level.cols)) return;
 
     const key = `${cell.col}-${cell.row}`;
 
@@ -1676,18 +1443,7 @@ export default function Home() {
       cell.col === levelThreeLockCell.col &&
       cell.row === levelThreeLockCell.row;
 
-    const repeatableSecretCell =
-      !level.isSecret &&
-      currentLevel === 1 &&
-      (
-        (cell.col === level.cols - 1 && cell.row === level.rows - 1) ||
-        (cell.col === 5 && cell.row === 0) ||
-        (cell.col === 6 && cell.row === 0) ||
-        (cell.col === 4 && cell.row === 0) ||
-        (cell.col === 0 && cell.row === 0)
-      );
-
-    if (clickedCells.includes(key) && !clickedLock && !repeatableSecretCell) {
+    if (clickedCells.includes(key) && !clickedLock) {
       flashStatus("Isso não vai funcionar… mas continua tentando (TDAH).");
       return;
     }
@@ -1801,13 +1557,11 @@ export default function Home() {
     }
 
     const clickedHeartSecretTrigger =
-      currentLevel === 1 &&
       !level.isSecret &&
       cell.col === level.cols - 1 &&
       cell.row === level.rows - 1;
 
     const clickedBossTrigger =
-      currentLevel === 1 &&
       !level.isSecret &&
       cell.col === 5 &&
       cell.row === 0;
@@ -1819,43 +1573,48 @@ export default function Home() {
       currentLevel === 1 && cell.col === 0 && cell.row === 0;
 
     const clickedAceTrigger =
-      currentLevel === 1 &&
       !level.isSecret &&
       cell.col === 0 &&
       cell.row === 0;
 
-    const clickedJackpotTrigger =
-      currentLevel === 1 &&
-      !level.isSecret &&
-      cell.col === 6 &&
-      cell.row === 0;
+    if (clickedHeartSecretTrigger && !heartSecretProgress.includes(currentLevel)) {
+      const nextHeartSet = [...heartSecretProgress, currentLevel];
+      setHeartSecretProgress(nextHeartSet);
 
-    if (clickedHeartSecretTrigger && !heartSecretUnlocked) {
-      const nextHeart = heartSecretProgress + 1;
-      setHeartSecretProgress(nextHeart);
-      flashSignal("CLICK");
-      if (nextHeart >= 3) {
-        setHeartSecretProgress(0);
+      if (!heartSecretUnlocked) {
+        flashSignal("CLICK");
+      }
+
+      const completedHeart =
+        nextHeartSet.includes(1) &&
+        nextHeartSet.includes(2) &&
+        nextHeartSet.includes(3) &&
+        !heartSecretUnlocked;
+
+      if (completedHeart) {
         setHeartSecretUnlocked(true);
         setUnlockedLevels((prev) => (prev.includes(4) ? prev : [...prev, 4]));
-        flashStatus("Você desbloqueou um easter egg, conclua os níveis para abrir.", 3800);
       }
-    } else if (currentLevel === 1) {
-      setHeartSecretProgress(0);
     }
 
-    if (clickedBossTrigger && !bossSecretUnlocked) {
-      const nextBoss = bossSecretProgress + 1;
-      setBossSecretProgress(nextBoss);
-      flashSignal("CLICK");
-      if (nextBoss >= 3) {
-        setBossSecretProgress(0);
+    if (clickedBossTrigger && !bossSecretProgress.includes(currentLevel)) {
+      const nextBossSet = [...bossSecretProgress, currentLevel];
+      setBossSecretProgress(nextBossSet);
+
+      if (!bossSecretUnlocked) {
+        flashSignal("CLICK");
+      }
+
+      const completedBoss =
+        nextBossSet.includes(1) &&
+        nextBossSet.includes(2) &&
+        nextBossSet.includes(3) &&
+        !bossSecretUnlocked;
+
+      if (completedBoss) {
         setBossSecretUnlocked(true);
         setUnlockedLevels((prev) => (prev.includes(5) ? prev : [...prev, 5]));
-        flashStatus("Você desbloqueou um easter egg, conclua os níveis para abrir.", 3800);
       }
-    } else if (currentLevel === 1) {
-      setBossSecretProgress(0);
     }
 
     if (!alienSecretUnlocked && currentLevel === 1) {
@@ -1863,11 +1622,10 @@ export default function Home() {
         setAlienSequenceStep(1);
         flashSignal("CLICK");
       } else if (clickedAlienStepTwo && alienSequenceStep === 1) {
-        setAlienSequenceStep(0);
+        setAlienSequenceStep(2);
         setAlienSecretUnlocked(true);
         setUnlockedLevels((prev) => (prev.includes(6) ? prev : [...prev, 6]));
         flashSignal("CLICK");
-        flashStatus("Você desbloqueou um easter egg, conclua os níveis para abrir.", 3800);
       } else if (!clickedAlienStepOne && !clickedAlienStepTwo) {
         setAlienSequenceStep(0);
       } else if (clickedAlienStepTwo && alienSequenceStep === 0) {
@@ -1875,49 +1633,23 @@ export default function Home() {
       }
     }
 
-    if (clickedAceTrigger && !aceSecretUnlocked) {
-      const nextAce = aceSecretProgress + 1;
-      setAceSecretProgress(nextAce);
-      flashSignal("CLICK");
-      if (nextAce >= 3) {
-        setAceSecretProgress(0);
+    if (clickedAceTrigger && !aceSecretProgress.includes(currentLevel)) {
+      const nextAceSet = [...aceSecretProgress, currentLevel];
+      setAceSecretProgress(nextAceSet);
+
+      if (!aceSecretUnlocked) {
+        flashSignal("CLICK");
+      }
+
+      const completedAce =
+        nextAceSet.includes(1) &&
+        nextAceSet.includes(2) &&
+        nextAceSet.includes(3) &&
+        !aceSecretUnlocked;
+
+      if (completedAce) {
         setAceSecretUnlocked(true);
         setUnlockedLevels((prev) => (prev.includes(7) ? prev : [...prev, 7]));
-        flashStatus("Você desbloqueou um easter egg, conclua os níveis para abrir.", 3800);
-      }
-    } else if (currentLevel === 1 && !clickedAlienStepTwo) {
-      setAceSecretProgress(0);
-    }
-
-    if (clickedJackpotTrigger && !jackpotSecretUnlocked) {
-      const nextJackpot = jackpotSecretProgress + 1;
-      setJackpotSecretProgress(nextJackpot);
-      flashSignal("CLICK");
-      if (nextJackpot >= 3) {
-        setJackpotSecretProgress(0);
-        setJackpotSecretUnlocked(true);
-        setUnlockedLevels((prev) => (prev.includes(8) ? prev : [...prev, 8]));
-        flashStatus("Você desbloqueou um easter egg, conclua os níveis para abrir.", 3800);
-      }
-    } else if (currentLevel === 1) {
-      setJackpotSecretProgress(0);
-    }
-
-    if (!banditSecretUnlocked && currentLevel === 1) {
-      if (clickedAceTrigger && banditSecretProgress === 0) {
-        setBanditSecretProgress(1);
-        flashSignal("CLICK");
-      } else if (clickedJackpotTrigger && banditSecretProgress === 1) {
-        setBanditSecretProgress(2);
-        flashSignal("CLICK");
-      } else if (clickedAceTrigger && banditSecretProgress === 2) {
-        setBanditSecretProgress(0);
-        setBanditSecretUnlocked(true);
-        setUnlockedLevels((prev) => (prev.includes(9) ? prev : [...prev, 9]));
-        flashSignal("CLICK");
-        flashStatus("Você desbloqueou um easter egg, conclua os níveis para abrir.", 3800);
-      } else if (!clickedAceTrigger && !clickedJackpotTrigger) {
-        setBanditSecretProgress(0);
       }
     }
 
@@ -1953,12 +1685,6 @@ export default function Home() {
         setGameFinished(true);
       } else if (currentLevel === 7) {
         addReward("ace");
-        setGameFinished(true);
-      } else if (currentLevel === 8) {
-        addReward("jackpot");
-        setGameFinished(true);
-      } else if (currentLevel === 9) {
-        addReward("bandit");
         setGameFinished(true);
       }
     } else {
@@ -2068,8 +1794,6 @@ ${SHARE_LINK}`;
           if (level.secretType === "boss") return "💀";
           if (level.secretType === "alien") return "👽";
           if (level.secretType === "ace") return "♠️";
-          if (level.secretType === "jackpot") return "🎰";
-          if (level.secretType === "bandit") return "🎖️";
           return "🟨";
         }
 
@@ -2141,9 +1865,7 @@ ${SHARE_LINK}`;
     currentLevel !== 4 &&
     currentLevel !== 5 &&
     currentLevel !== 6 &&
-    currentLevel !== 7 &&
-    currentLevel !== 8 &&
-    currentLevel !== 9;
+    currentLevel !== 7;
 
   const visibleLevels = LEVELS.filter((lvl) => {
     if (lvl.id <= 3) return true;
@@ -2152,8 +1874,6 @@ ${SHARE_LINK}`;
     if (lvl.id === 5) return bossSecretUnlocked;
     if (lvl.id === 6) return alienSecretUnlocked;
     if (lvl.id === 7) return aceSecretUnlocked;
-    if (lvl.id === 8) return jackpotSecretUnlocked;
-    if (lvl.id === 9) return banditSecretUnlocked;
     return false;
   });
 
@@ -2161,8 +1881,6 @@ ${SHARE_LINK}`;
   const lostBoss = level.secretType === "boss" && !found && clicks >= MAX_CLICKS;
   const lostAlien = level.secretType === "alien" && !found && clicks >= MAX_CLICKS;
   const lostAce = level.secretType === "ace" && !found && clicks >= MAX_CLICKS;
-  const lostJackpot = level.secretType === "jackpot" && !found && clicks >= MAX_CLICKS;
-  const lostBandit = level.secretType === "bandit" && !found && clicks >= MAX_CLICKS;
   const bossDanger = level.secretType === "boss" && clicks >= 3;
 
   return (
@@ -2556,11 +2274,7 @@ ${SHARE_LINK}`;
                   ? "AREA 51"
                   : level.secretType === "ace"
                     ? "ACE"
-                    : level.secretType === "jackpot"
-                      ? "777"
-                      : level.secretType === "bandit"
-                        ? "171"
-                        : "Encontre o Fim"}
+                    : "Encontre o Fim"}
         </h1>
 
         {!finalCelebration && (
@@ -2586,11 +2300,7 @@ ${SHARE_LINK}`;
                             ? "bg-green-600 text-white border-green-400"
                             : lvl.secretType === "ace"
                               ? "bg-white text-black border-zinc-300"
-                              : lvl.secretType === "jackpot"
-                                ? "bg-yellow-400 text-black border-yellow-200"
-                                : lvl.secretType === "bandit"
-                                  ? "bg-slate-200 text-black border-white"
-                                  : "bg-amber-400 text-black border-amber-300"
+                              : "bg-amber-400 text-black border-amber-300"
                       : unlocked
                         ? "bg-zinc-800 text-white border-zinc-700 hover:bg-zinc-700"
                         : "bg-zinc-900 text-zinc-500 border-zinc-800 cursor-not-allowed"
@@ -2651,28 +2361,6 @@ ${SHARE_LINK}`;
               </p>
             )}
 
-          {!finalCelebration &&
-            level.secretType === "jackpot" &&
-            !found &&
-            clicks < MAX_CLICKS &&
-            !sleepMode &&
-            !gameOver && (
-              <p className="text-yellow-300 font-semibold text-sm sm:text-base">
-                As moedas estão brilhando. Talvez a casa não vença hoje.
-              </p>
-            )}
-
-          {!finalCelebration &&
-            level.secretType === "bandit" &&
-            !found &&
-            clicks < MAX_CLICKS &&
-            !sleepMode &&
-            !gameOver && (
-              <p className="text-zinc-200 font-semibold text-sm sm:text-base">
-                Grades, listras e silêncio. Encontre o bandido antes que ele fuja.
-              </p>
-            )}
-
           {finalCelebration && (
             <>
               <p className="text-base sm:text-lg text-amber-300 font-semibold max-w-2xl">
@@ -2713,11 +2401,7 @@ ${SHARE_LINK}`;
                     ? `Dica: ${hint || "Encontre o alien escondido"}`
                     : level.secretType === "ace"
                       ? `Dica: ${hint || "Encontre o ás escondido"}`
-                      : level.secretType === "jackpot"
-                        ? `Dica: ${hint || "Encontre o jackpot escondido"}`
-                        : level.secretType === "bandit"
-                          ? `Dica: ${hint || "Encontre o bandido por trás das grades"}`
-                          : `Dica: ${hint || "Clique em algum bloco"}`}
+                      : `Dica: ${hint || "Clique em algum bloco"}`}
             </p>
           )}
 
@@ -2787,20 +2471,6 @@ ${SHARE_LINK}`;
             </p>
           )}
 
-          {found && level.secretType === "jackpot" && !finalCelebration && (
-            <p className="text-base sm:text-lg text-yellow-300 font-semibold max-w-2xl">
-              🎰 JACKPOT. Hoje a casa perdeu.
-              <br />As moedas finalmente escolheram você.
-            </p>
-          )}
-
-          {found && level.secretType === "bandit" && !finalCelebration && (
-            <p className="text-base sm:text-lg text-zinc-100 font-semibold max-w-2xl">
-              🎖️ Você encontrou o bandido antes que ele escapasse.
-              <br />Missão cumprida.
-            </p>
-          )}
-
           {lostBoss && !finalCelebration && !gameOver && (
             <p className="text-base sm:text-lg text-red-400 font-semibold max-w-2xl boss-glow">
               💀 Volte para o seu Fortnite, seu verme.
@@ -2817,18 +2487,6 @@ ${SHARE_LINK}`;
             <p className="text-base sm:text-lg text-zinc-300 font-semibold max-w-2xl ace-glow">
               ♠ Você blefou mal.
               <br />A casa levou essa mão.
-            </p>
-          )}
-
-          {lostJackpot && !finalCelebration && !gameOver && (
-            <p className="text-base sm:text-lg text-yellow-300 font-semibold max-w-2xl">
-              🎰 Você girou... mas a sorte passou reto.
-            </p>
-          )}
-
-          {lostBandit && !finalCelebration && !gameOver && (
-            <p className="text-base sm:text-lg text-zinc-200 font-semibold max-w-2xl">
-              🚨 O golpista fugiu por entre as grades.
             </p>
           )}
         </div>
@@ -2914,14 +2572,6 @@ ${SHARE_LINK}`;
                   level.secretType === "ace" &&
                   isSpadeStemCell(row, col, level.rows, level.cols);
 
-                const isJackpotCoin =
-                  level.secretType === "jackpot" &&
-                  isJackpotCoinCell(row, col, level.rows, level.cols);
-
-                const isBanditBar =
-                  level.secretType === "bandit" &&
-                  isBanditBarCell(row, col, level.rows, level.cols);
-
                 const showLock =
                   currentLevel === 3 &&
                   hasKey &&
@@ -2960,11 +2610,7 @@ ${SHARE_LINK}`;
                                 ? "bg-lime-400 text-black alien-pulse border border-lime-200"
                                 : level.secretType === "ace"
                                   ? "bg-white text-black ace-pulse border border-zinc-200"
-                                  : level.secretType === "jackpot"
-                                    ? "bg-yellow-300 text-black treasure-pulse border border-yellow-100"
-                                    : level.secretType === "bandit"
-                                      ? "bg-zinc-100 text-black treasure-pulse border border-zinc-300"
-                                      : "bg-amber-400 text-black treasure-pulse"
+                                  : "bg-amber-400 text-black treasure-pulse"
                           : clicked
                             ? level.secretType === "heart"
                               ? "bg-rose-700"
@@ -2974,11 +2620,7 @@ ${SHARE_LINK}`;
                                   ? "bg-green-900 border border-green-700"
                                   : level.secretType === "ace"
                                     ? "bg-zinc-700 border border-zinc-500"
-                                    : level.secretType === "jackpot"
-                                      ? "bg-yellow-700 border border-yellow-400"
-                                      : level.secretType === "bandit"
-                                        ? "bg-zinc-700 border border-zinc-400"
-                                        : "bg-sky-700"
+                                    : "bg-sky-700"
                             : level.secretType === "heart"
                               ? "bg-rose-900 hover:bg-rose-800"
                               : level.secretType === "boss"
@@ -2999,15 +2641,7 @@ ${SHARE_LINK}`;
                                     ? isAceStem
                                       ? "bg-zinc-800 hover:bg-zinc-700 border border-white/20"
                                       : "bg-zinc-900 hover:bg-zinc-800 border border-white/10"
-                                    : level.secretType === "jackpot"
-                                      ? isJackpotCoin
-                                        ? "bg-yellow-500/90 hover:bg-yellow-400 text-black border border-yellow-100"
-                                        : "bg-yellow-700/85 hover:bg-yellow-600/90 border border-yellow-200/30"
-                                      : level.secretType === "bandit"
-                                        ? isBanditBar
-                                          ? "bg-zinc-100 hover:bg-white text-black border border-zinc-400"
-                                          : "bg-zinc-900 hover:bg-zinc-800 border border-zinc-500"
-                                        : "bg-zinc-700 hover:bg-zinc-600 rounded-lg"
+                                    : "bg-zinc-700 hover:bg-zinc-600 rounded-lg"
                     }`}
                     style={{
                       width: `${responsiveCellSize}px`,
@@ -3027,11 +2661,7 @@ ${SHARE_LINK}`;
                               ? "👽"
                               : level.secretType === "ace"
                                 ? "♠"
-                                : level.secretType === "jackpot"
-                                  ? "🎰"
-                                  : level.secretType === "bandit"
-                                    ? "🎖️"
-                                    : "💎"}
+                                : "💎"}
                       </span>
                     ) : showGift ? (
                       "🎁"
@@ -3041,10 +2671,6 @@ ${SHARE_LINK}`;
                       "🔑"
                     ) : clicked ? (
                       "•"
-                    ) : level.secretType === "jackpot" && isJackpotCoin ? (
-                      "🪙"
-                    ) : level.secretType === "bandit" && isBanditBar ? (
-                      "▌"
                     ) : (
                       ""
                     )}
@@ -3129,28 +2755,6 @@ ${SHARE_LINK}`;
             }`}
           >
             Virar a carta ACE
-          </button>
-        )}
-
-        {!finalCelebration && jackpotSecretUnlocked && mainGameFinished && currentLevel !== 8 && (
-          <button
-            onClick={() => setCurrentLevel(8)}
-            className={`bg-yellow-400 hover:bg-yellow-300 text-black font-semibold transition ${
-              isMobile ? "px-4 py-2 text-sm rounded-lg" : "px-5 py-3 rounded-xl"
-            }`}
-          >
-            Girar a fase 777
-          </button>
-        )}
-
-        {!finalCelebration && banditSecretUnlocked && mainGameFinished && currentLevel !== 9 && (
-          <button
-            onClick={() => setCurrentLevel(9)}
-            className={`bg-slate-200 hover:bg-white text-black font-semibold transition ${
-              isMobile ? "px-4 py-2 text-sm rounded-lg" : "px-5 py-3 rounded-xl"
-            }`}
-          >
-            Caçar o 171
           </button>
         )}
 
