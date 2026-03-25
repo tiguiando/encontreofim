@@ -1965,8 +1965,8 @@ export default function Home() {
         collectedRewards.length > 0
           ? `
 Conquistas: ${collectedRewards.map((reward) => reward.emoji).join(" ")}`
-          : "
-Conquistas: nenhuma ainda";
+          : `
+Conquistas: nenhuma ainda`;
 
       const respectLine = hasReward("speed")
         ? `
