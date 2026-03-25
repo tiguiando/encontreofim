@@ -84,14 +84,14 @@ const REWARD_META: Record<RewardId, Reward> = {
 };
 
 const HINT_TEXTS: Record<HintEnvelopeId, string> = {
-  heart: "voce nao me conhece, mas gosto de ser o ultimo em todos os lugares",
-  alien: "existem objetos nao identificados naquela area que ja passou",
-  boss: "esse ser maligno tem um numero proprio",
-  ace: "essa jogo é AAA, pra mim sempre será o numero 1!",
-  jackpot: "voce pode acertar o jackpot se insistir",
-  bandit: "cuidado tem golpista escondido logo na entrada",
+  heart: "os ultimos serao os primeiros",
+  alien: "UFOS fora encontrados entre o primeiro e segundo vilarejo",
+  boss: "o mal tem um numero proprio dividido pelo mundo",
+  ace: "esse jogo é AAA, pra mim sempre será o numero 1!",
+  jackpot: "se insistir sempre na sorte voce pode acertar o jackpot",
+  bandit: "cuidado tem golpista escondido e todas as regioes",
   memory:
-    "tenho memoria ruim, as vezes eu repito o nome do jogo varias vezes pra não esquecer.",
+    "sou esquecido e gosto de repetir o nome do jogo varias vezes pra lembrar.",
 };
 
 const HINT_CARD_EMOJI: Record<HintEnvelopeId, string> = {
@@ -1740,7 +1740,7 @@ export default function Home() {
       currentLevel === 1 && cell.col === 4 && cell.row === 0;
 
     const clickedAlienStepTwo =
-      currentLevel === 1 && cell.col === 0 && cell.row === 0;
+      currentLevel === 2 && cell.col === 0 && cell.row === 0;
 
     const clickedAceTrigger =
       !level.isSecret &&
@@ -1794,7 +1794,7 @@ export default function Home() {
       }
     }
 
-    if (!alienSecretUnlocked && currentLevel === 1) {
+    if (!alienSecretUnlocked) {
       if (clickedAlienStepOne && alienSequenceStep === 0) {
         setAlienSequenceStep(1);
         flashSignal("CLICK");
@@ -2404,7 +2404,7 @@ ${SHARE_LINK}`;
             <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
               <div>
                 <p className="text-[10px] tracking-[0.22em] text-zinc-400 uppercase">
-                  Você não está sozinho aqui...
+                  Você não está sozinho! Aqui suas conquistas valem mais do que o tempo.
                 </p>
                 <h2 className="text-base sm:text-lg font-bold mt-1">🏆 Ranking Global</h2>
               </div>
