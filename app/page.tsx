@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
 
 type Cell = { col: number; row: number };
 
@@ -52,9 +51,6 @@ type RankingEntry = {
 const SHARE_LINK = "https://encontreofim.vercel.app/";
 const HELP_DEV_LINK =
   "https://www.youtube.com/@tiguiando?sub_confirmation=1&sub_confirmation=1";
-
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 const MAX_CLICKS = 5;
 const SLEEP_LIMIT_SECONDS = 33 * 60 + 33;
@@ -759,7 +755,6 @@ export default function Home() {
   const [rankingSaved, setRankingSaved] = useState(false);
   const [showRankingModal, setShowRankingModal] = useState(false);
   const [showInstructions, setShowInstructions] = useState(false);
-  const [onlineCount, setOnlineCount] = useState(0);
 
   const [dieCell, setDieCell] = useState<Cell | null>(null);
   const [hasDie, setHasDie] = useState(false);
@@ -783,17 +778,11 @@ export default function Home() {
   const signalTimeoutRef = useRef<number | null>(null);
   const idleTimeoutRef = useRef<number | null>(null);
   const statusTimeoutRef = useRef<number | null>(null);
-  const onlineSessionIdRef = useRef<string>("");
 
   const level = useMemo(
     () => LEVELS.find((lvl) => lvl.id === currentLevel)!,
     [currentLevel]
   );
-
-  const supabase = useMemo(() => {
-    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return null;
-    return createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  }, []);
 
   const mainRunDisplayTime = mainRunCompletedTime ?? totalElapsed;
 
@@ -1452,48 +1441,12 @@ export default function Home() {
   }, [level.secretType, found, gameFinished, sleepMode, finalCelebration, gameOver, clicks]);
 
   useEffect(() => {
-    if (!onlineSessionIdRef.current) {
-      onlineSessionIdRef.current = typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID()
-        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    }
-  }, []);
-
-  async function updateOnlinePresence() {
-    if (!supabase || !onlineSessionIdRef.current) return;
-
-    const nowIso = new Date().toISOString();
-
-    await supabase.from("online_players").upsert({
-      id: onlineSessionIdRef.current,
-      last_seen: nowIso,
-    });
-
-    const activeSince = new Date(Date.now() - 30_000).toISOString();
-
-    const { count } = await supabase
-      .from("online_players")
-      .select("*", { count: "exact", head: true })
-      .gt("last_seen", activeSince);
-
-    if (typeof count === "number") {
-      setOnlineCount(count);
-    }
-  }
-
-  useEffect(() => {
-    if (!supabase || !onlineSessionIdRef.current) return;
-
-    updateOnlinePresence();
-
-    const interval = window.setInterval(() => {
-      updateOnlinePresence();
-    }, 15_000);
-
     return () => {
-      window.clearInterval(interval);
+      if (signalTimeoutRef.current) window.clearTimeout(signalTimeoutRef.current);
+      if (idleTimeoutRef.current) window.clearTimeout(idleTimeoutRef.current);
+      if (statusTimeoutRef.current) window.clearTimeout(statusTimeoutRef.current);
     };
-  }, [supabase]);
+  }, []);
 
   function handleTitleClick() {
     if (finalCelebration) return;
@@ -2009,11 +1962,11 @@ export default function Home() {
 
     if (finalCelebration) {
       const rewardsLine =
-  collectedRewards.length > 0
-    ? `
+        collectedRewards.length > 0
+          ? `
 Conquistas: ${collectedRewards.map((reward) => reward.emoji).join(" ")}`
-    : `
-Conquistas: nenhuma ainda`;
+          : "
+Conquistas: nenhuma ainda";
 
       const respectLine = hasReward("speed")
         ? `
@@ -3236,34 +3189,16 @@ ${SHARE_LINK}`;
       </div>
 
       {!finalCelebration && (
-        <div
-          className={`fixed left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 ${
-            isMobile ? "bottom-9" : "bottom-10"
+        <button
+          onClick={() => setShowRankingModal(true)}
+          className={`fixed left-1/2 -translate-x-1/2 z-40 rounded-full border border-zinc-700 bg-zinc-900/80 hover:bg-zinc-800 flex items-center justify-center transition shadow-lg ${
+            isMobile ? "bottom-9 w-10 h-10 text-lg" : "bottom-10 w-11 h-11 text-xl"
           }`}
+          title="Abrir ranking"
+          aria-label="Abrir ranking"
         >
-          <button
-            type="button"
-            className={`rounded-full border border-green-700/60 bg-zinc-900/80 hover:bg-zinc-800 flex flex-col items-center justify-center transition shadow-lg ${
-              isMobile ? "w-10 h-10 text-[10px]" : "w-11 h-11 text-[11px]"
-            }`}
-            title="Jogadores online"
-            aria-label="Jogadores online"
-          >
-            <span className={`${isMobile ? "text-sm leading-none" : "text-base leading-none"}`}>👤</span>
-            <span className="text-green-400 font-bold leading-none">{onlineCount}</span>
-          </button>
-
-          <button
-            onClick={() => setShowRankingModal(true)}
-            className={`rounded-full border border-zinc-700 bg-zinc-900/80 hover:bg-zinc-800 flex items-center justify-center transition shadow-lg ${
-              isMobile ? "w-10 h-10 text-lg" : "w-11 h-11 text-xl"
-            }`}
-            title="Abrir ranking"
-            aria-label="Abrir ranking"
-          >
-            🏆
-          </button>
-        </div>
+          🏆
+        </button>
       )}
 
       <div className="fixed bottom-2 left-1/2 -translate-x-1/2 z-40 flex items-center gap-4">
