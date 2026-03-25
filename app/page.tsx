@@ -3210,6 +3210,37 @@ ${SHARE_LINK}`;
         </div>
       </div>
 
+
+      {!finalCelebration && (
+        <div
+          className={`fixed left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 ${
+            isMobile ? "bottom-12" : "bottom-14"
+          }`}
+        >
+          <div
+            className={`rounded-full border border-zinc-700 bg-zinc-900/90 text-white flex flex-col items-center justify-center shadow-lg ${
+              isMobile ? "w-11 h-11" : "w-12 h-12"
+            }`}
+            title="Jogadores online"
+            aria-label="Jogadores online"
+          >
+            <span className={isMobile ? "text-sm leading-none" : "text-base leading-none"}>👤</span>
+            <span className="text-[10px] leading-none mt-1">{onlineCount}</span>
+          </div>
+
+          <button
+            onClick={() => setShowRankingModal(true)}
+            className={`rounded-full border border-zinc-700 bg-zinc-900/90 hover:bg-zinc-800 text-white flex items-center justify-center transition shadow-lg ${
+              isMobile ? "w-11 h-11 text-lg" : "w-12 h-12 text-xl"
+            }`}
+            title="Abrir ranking"
+            aria-label="Abrir ranking"
+          >
+            🏆
+          </button>
+        </div>
+      )}
+
       <div className="fixed bottom-2 left-1/2 -translate-x-1/2 z-40 flex items-center gap-4">
         <button
           onClick={() => setShowInstructions(true)}
