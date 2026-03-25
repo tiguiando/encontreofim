@@ -56,7 +56,8 @@ const MAX_CLICKS = 5;
 const SLEEP_LIMIT_SECONDS = 33 * 60 + 33;
 const IDLE_KNOCK_MS = 33_000;
 const MESSAGE_MS = 3000;
-const SPEED_RUN_LIMIT_SECONDS = 60;
+const RABBIT_RUN_LIMIT_SECONDS = 10;
+const BRAIN_RUN_LIMIT_SECONDS = 60;
 
 const LEVELS: LevelConfig[] = [
   { id: 1, name: "Nível 1", cols: 10, rows: 6 },
@@ -853,7 +854,7 @@ export default function Home() {
     const now = Date.now();
     const elapsed = Math.floor((now - rabbitRunStartRef.current) / 1000);
 
-    if (elapsed > SPEED_RUN_LIMIT_SECONDS) {
+    if (elapsed > RABBIT_RUN_LIMIT_SECONDS) {
       resetRabbitRunSequence();
       return;
     }
@@ -876,7 +877,7 @@ export default function Home() {
 
     if (levelCompleted === 3) {
       if (sequence.length === 2 && sequence[0] === 1 && sequence[1] === 2) {
-        if (elapsed < SPEED_RUN_LIMIT_SECONDS) {
+        if (elapsed < RABBIT_RUN_LIMIT_SECONDS) {
           addReward("speed");
         }
       }
@@ -903,7 +904,7 @@ export default function Home() {
     const now = Date.now();
     const elapsed = Math.floor((now - trollRunStartRef.current) / 1000);
 
-    if (elapsed > SPEED_RUN_LIMIT_SECONDS) {
+    if (elapsed > BRAIN_RUN_LIMIT_SECONDS) {
       resetTrollRunSequence();
       return;
     }
@@ -926,7 +927,7 @@ export default function Home() {
 
     if (levelCompleted === 3) {
       if (sequence.length === 2 && sequence[0] === 1 && sequence[1] === 2) {
-        if (elapsed < SPEED_RUN_LIMIT_SECONDS) {
+        if (elapsed < BRAIN_RUN_LIMIT_SECONDS) {
           addReward("brain");
         }
       }
