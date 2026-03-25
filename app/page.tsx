@@ -3213,6 +3213,28 @@ ${SHARE_LINK}`;
           HELP the DEV
         </a>
       </div>
-    </main>
+    
+{/* ONLINE + RANKING FIX */}
+{!finalCelebration && (
+  <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3">
+    <div
+      className="px-3 py-2 rounded-full bg-zinc-900 border border-zinc-700 text-xs text-white flex items-center gap-2 shadow-lg"
+      title="Jogadores online"
+    >
+      <span>👤</span>
+      <span>{onlineCount ?? 1}</span>
+    </div>
+
+    <button
+      onClick={() => setShowRankingModal(true)}
+      className="w-12 h-12 rounded-full bg-zinc-900 border border-zinc-700 hover:bg-zinc-800 transition flex items-center justify-center shadow-lg"
+      title="Abrir ranking"
+    >
+      🏆
+    </button>
+  </div>
+)}
+
+</main>
   );
 }
