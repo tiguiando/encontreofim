@@ -38,6 +38,8 @@ type HintEnvelope = {
   text: string;
 };
 
+type FinalThemeId = "speed" | "slow" | "boss" | "alien" | "heart" | "ace" | "brain" | "default";
+
 type RankingEntry = {
   name: string;
   time: number;
@@ -129,6 +131,13 @@ const FINAL_MESSAGES = [
 ];
 
 const FIREWORKS = ["🎆", "🎇", "✨", "🎉"];
+const LIGHTNING_EMOJIS = ["⚡", "⚡", "⚡"];
+const FOOD_EMOJIS = ["🍕", "🍔", "🍟"];
+const FIRE_EMOJIS = ["🔥", "🔥", "🔥"];
+const ALIEN_FINAL_EMOJIS = ["🛸", "👾", "🛸"];
+const HEART_FINAL_EMOJIS = ["❤️", "💖", "💜", "💙", "💛"];
+const ACE_FINAL_EMOJIS = ["♠️", "♥️", "♦️", "♣️"];
+const BRAIN_FINAL_EMOJIS = ["🧠", "🧠", "🧠"];
 
 const FIM_PATTERN = [
   "111110101100011",
@@ -510,6 +519,46 @@ function isVisibleCellForLevel(level: LevelConfig, row: number, col: number) {
   return true;
 }
 
+function getFinalThemeReward(rewards: Reward[]): FinalThemeId {
+  const supportedOrder: RewardId[] = ["speed", "slow", "boss", "alien", "heart", "ace", "brain"];
+  const firstSupported = rewards.find((reward) => supportedOrder.includes(reward.id));
+
+  if (!firstSupported) return "default";
+  return firstSupported.id as FinalThemeId;
+}
+
+function getFinalThemeEmojis(theme: FinalThemeId) {
+  if (theme === "speed") return LIGHTNING_EMOJIS;
+  if (theme === "slow") return FOOD_EMOJIS;
+  if (theme === "boss") return FIRE_EMOJIS;
+  if (theme === "alien") return ALIEN_FINAL_EMOJIS;
+  if (theme === "heart") return HEART_FINAL_EMOJIS;
+  if (theme === "ace") return ACE_FINAL_EMOJIS;
+  if (theme === "brain") return BRAIN_FINAL_EMOJIS;
+  return [];
+}
+
+function getFinalThemePhrase(theme: FinalThemeId) {
+  if (theme === "speed") return "Você correu mais rápido que o tempo.";
+  if (theme === "slow") return "Você aproveitou cada passo.";
+  if (theme === "boss") return "Você enfrentou o fim… e venceu.";
+  if (theme === "alien") return "Você descobriu o que não deveria.";
+  if (theme === "heart") return "Você sentiu o jogo.";
+  if (theme === "ace") return "Você dominou tudo.";
+  if (theme === "brain") return "Você não venceu o jogo… você entendeu ele.";
+  return "Você reuniu os segredos. Agora é só celebrar e compartilhar.";
+}
+
+function getFinalBoardEmoji(row: number, col: number, theme: FinalThemeId) {
+  const fireworks = FIREWORKS[(row + col) % FIREWORKS.length];
+  const themed = getFinalThemeEmojis(theme);
+
+  if (themed.length === 0) return fireworks;
+  if ((row + col) % 2 === 0) return fireworks;
+
+  return themed[(row * 3 + col) % themed.length];
+}
+
 export default function Home() {
   const [boardSeed, setBoardSeed] = useState(0);
 
@@ -610,6 +659,9 @@ export default function Home() {
   );
 
   const displayRanking = useMemo(() => ranking.slice(0, 10), [ranking]);
+
+  const finalTheme = useMemo(() => getFinalThemeReward(collectedRewards), [collectedRewards]);
+  const finalThemePhrase = useMemo(() => getFinalThemePhrase(finalTheme), [finalTheme]);
 
   const boardGapClass = isMobile ? "gap-1" : "gap-2";
   const boardPaddingClass = isMobile ? "p-2" : "p-3";
@@ -1681,7 +1733,7 @@ export default function Home() {
             const key = `${col}-${row}`;
             const clicked = finalClickedCells.includes(key);
 
-            if (clicked) return FIREWORKS[(row + col) % FIREWORKS.length];
+            if (clicked) return getFinalBoardEmoji(row, col, finalTheme);
             return value === "1" ? "🟨" : "⬛";
           })
           .join("")
@@ -2312,7 +2364,7 @@ ${SHARE_LINK}`;
           {finalCelebration && (
             <>
               <p className="text-base sm:text-lg text-amber-300 font-semibold max-w-2xl">
-                Você reuniu os segredos. Agora é só celebrar e compartilhar.
+                {finalThemePhrase}
               </p>
               <p className="text-zinc-200 font-semibold text-sm sm:text-base">
                 vc chegou aqui em {formatTime(totalElapsed)}
@@ -2466,7 +2518,7 @@ ${SHARE_LINK}`;
                       height: `${finalCellSize}px`,
                     }}
                   >
-                    {clicked ? FIREWORKS[(row + col) % FIREWORKS.length] : ""}
+                    {clicked ? getFinalBoardEmoji(row, col, finalTheme) : ""}
                   </button>
                 );
               })
