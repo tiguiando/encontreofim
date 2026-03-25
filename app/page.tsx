@@ -1962,11 +1962,11 @@ export default function Home() {
 
     if (finalCelebration) {
       const rewardsLine =
-  collectedRewards.length > 0
-    ? `
+        collectedRewards.length > 0
+          ? `
 Conquistas: ${collectedRewards.map((reward) => reward.emoji).join(" ")}`
-    : `
-Conquistas: nenhuma ainda`;
+          : "
+Conquistas: nenhuma ainda";
 
       const respectLine = hasReward("speed")
         ? `
@@ -3021,7 +3021,7 @@ ${SHARE_LINK}`;
               isMobile ? "px-4 py-2 text-sm rounded-lg" : "px-5 py-3 rounded-xl"
             }`}
           >
-            Resetar partida
+            Mais uma vez
           </button>
 
           {canShare && (
