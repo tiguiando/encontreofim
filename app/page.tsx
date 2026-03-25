@@ -624,19 +624,32 @@ export default function Home() {
     const raw = Math.floor((availableWidth - totalGap) / level.cols);
 
     if (finalCelebration) {
-      const rewardsLine =
-        collectedRewards.length > 0
-          ? collectedRewards.map((reward) => reward.emoji).join(" ")
-          : "nenhuma conquista";
+      if (isMobile) return Math.max(16, Math.min(raw, 28));
+      return Math.max(24, Math.min(raw, 46));
+    }
 
-      const text = `Eu conclui o desafio no Encontre o FIM e esse é o meu resultado:
+    if (isMobile) {
+      return Math.max(18, Math.min(raw, 32));
+    }
 
-Tempo: ${formatTime(totalElapsed)}
-Conquistas: ${rewardsLine}
+    return Math.max(32, Math.min(raw, 46));
+  }, [viewportWidth, level.cols, boardGapPx, horizontalPadding, isMobile, finalCelebration]);
 
-Vai encarar?
-${SHARE_LINK}`;
+  const finalCellSize = useMemo(() => {
+    const availableWidth = viewportWidth - horizontalPadding;
+    const totalGap = (FIM_PATTERN[0].length - 1) * boardGapPx;
+    const raw = Math.floor((availableWidth - totalGap) / FIM_PATTERN[0].length);
 
+    if (isMobile) return Math.max(16, Math.min(raw, 28));
+    return Math.max(24, Math.min(raw, 46));
+  }, [viewportWidth, horizontalPadding, boardGapPx, isMobile]);
+
+  function hasReward(id: RewardId) {
+    return collectedRewards.some((reward) => reward.id === id);
+  }
+
+  useEffect(() => {
+    async function loadRanking() {
       try {
         const res = await fetch("/api/ranking", { cache: "no-store" });
 
