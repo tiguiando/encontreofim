@@ -1967,9 +1967,8 @@ export default function Home() {
     : `\nConquistas: nenhuma ainda`;
 
       const respectLine = hasReward("speed")
-        ? `
-voce tem o meu respeito. DEV`
-        : "";
+  ? `\nvoce tem o meu respeito. DEV`
+  : "";
 
       const totalLine = `
 Tempo: ${formatTime(totalElapsed)}`;
