@@ -84,14 +84,14 @@ const REWARD_META: Record<RewardId, Reward> = {
 };
 
 const HINT_TEXTS: Record<HintEnvelopeId, string> = {
-  heart: "os ultimos serao os primeiros",
-  alien: "UFOS fora encontrados entre o primeiro e segundo vilarejo",
-  boss: "o mal tem um numero proprio dividido pelo mundo",
-  ace: "esse jogo e AAA, pra mim sempre sera o numero 1!",
-  jackpot: "se insistir sempre na sorte voce pode acertar o jackpot",
-  bandit: "cuidado tem golpista escondido e todas as regioes",
+  heart: "Sempre o último será o primeiro",
+  alien: "Você acredita em aliens? Eu ja vi um na área 51 entre o primeiro e segundo vilarejo",
+  boss: "O mal tem um número próprio dividido pelo mundo",
+  ace: "Esse jogo é AAA, pra mim sempre será o número 1!",
+  jackpot: "Eu sempre jogo meu número da sorte para acertar o jackpot",
+  bandit: "cuidado tem golpista (171) escondido e todas as regiões",
   memory:
-    "sou esquecido e gosto de repetir o nome do jogo varias vezes pra lembrar.",
+    "Sou esquecido, eu gosto de repetir o nome do jogo várias vezes para entrar na cabeça",
 };
 
 const HINT_CARD_EMOJI: Record<HintEnvelopeId, string> = {
