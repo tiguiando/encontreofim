@@ -87,9 +87,11 @@ const HINT_TEXTS: Record<HintEnvelopeId, string> = {
   heart: "pode ir na frente, eu gosto de insistir em ser o ultimo.",
   alien: "existem objetos nao identificados naquela area que ja passou",
   boss: "esse ser maligno tem um numero proprio",
-  ace: "essa jogo é AAA, pra mim sempre será o numero 1!",
+  ace: "esse jogo é AAA, pra mim sempre sera o numero 1!",
+  jackpot: "voce pode acertar o jackpot se insistir",
+  bandit: "cuidado tem golpista escondido logo na entrada",
   memory:
-    "tenho memoria ruim, as vezes eu repito o nome do jogo varias vezes pra não esquecer.",
+    "tenho memoria ruim, as vezes eu repito o nome do jogo varias vezes pra nao esquecer.",
 };
 
 const HINT_CARD_EMOJI: Record<HintEnvelopeId, string> = {
