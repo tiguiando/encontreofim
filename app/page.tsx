@@ -1965,8 +1965,8 @@ export default function Home() {
         collectedRewards.length > 0
           ? `
 Conquistas: ${collectedRewards.map((reward) => reward.emoji).join(" ")}`
-          : "
-Conquistas: nenhuma ainda";
+          : `
+Conquistas: nenhuma ainda`;
 
       const respectLine = hasReward("speed")
         ? `
@@ -2682,7 +2682,7 @@ ${SHARE_LINK}`;
                     {finalMessage}
                   </p>
                   <p className="text-green-400 text-lg sm:text-xl font-semibold">
-                    3 niveis em sequencia: {formatTime(mainRunDisplayTime)}
+                    Completou os 3 niveis em {formatTime(mainRunDisplayTime)}
                   </p>
                 </>
               )}
