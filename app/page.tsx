@@ -1565,6 +1565,7 @@ export default function Home() {
     setter(true);
     flashStatus("voce desbloqueou uma fase secreta, conclua os niveis para prosseguir.");
     setUnlockedLevels((prev) => (prev.includes(levelId) ? prev : [...prev, levelId]));
+    return true;
   }
 
   function isEasterEggTriggerCell(levelId: number, cell: Cell) {
@@ -1616,6 +1617,7 @@ export default function Home() {
     }
 
     const triggeredSecretMessage = maybeHandleSixNine(currentLevel, cell);
+    let unlockedSecretThisClick = false;
 
     const clickedBomb = bombCells.some(
       (bomb) => bomb.col === cell.col && bomb.row === cell.row
@@ -1768,7 +1770,7 @@ export default function Home() {
         !heartSecretUnlocked;
 
       if (completedHeart) {
-        completeSecretUnlock(4, setHeartSecretUnlocked);
+        unlockedSecretThisClick = completeSecretUnlock(4, setHeartSecretUnlocked);
       }
     }
 
@@ -1787,7 +1789,7 @@ export default function Home() {
         !bossSecretUnlocked;
 
       if (completedBoss) {
-        completeSecretUnlock(5, setBossSecretUnlocked);
+        unlockedSecretThisClick = completeSecretUnlock(5, setBossSecretUnlocked);
       }
     }
 
@@ -1797,9 +1799,8 @@ export default function Home() {
         flashSignal("CLICK");
       } else if (clickedAlienStepTwo && alienSequenceStep === 1) {
         setAlienSequenceStep(2);
-        setAlienSecretUnlocked(true);
-        setUnlockedLevels((prev) => (prev.includes(6) ? prev : [...prev, 6]));
         flashSignal("CLICK");
+        unlockedSecretThisClick = completeSecretUnlock(6, setAlienSecretUnlocked);
       } else if (!clickedAlienStepOne && !clickedAlienStepTwo) {
         setAlienSequenceStep(0);
       } else if (clickedAlienStepTwo && alienSequenceStep === 0) {
@@ -1822,7 +1823,7 @@ export default function Home() {
         !aceSecretUnlocked;
 
       if (completedAce) {
-        completeSecretUnlock(7, setAceSecretUnlocked);
+        unlockedSecretThisClick = completeSecretUnlock(7, setAceSecretUnlocked);
       }
     }
 
@@ -1841,7 +1842,7 @@ export default function Home() {
         !jackpotSecretUnlocked;
 
       if (completedJackpot) {
-        completeSecretUnlock(8, setJackpotSecretUnlocked);
+        unlockedSecretThisClick = completeSecretUnlock(8, setJackpotSecretUnlocked);
       }
     }
 
@@ -1855,7 +1856,7 @@ export default function Home() {
       } else if (clickedBanditStepThree && banditSecretStep === 2) {
         setBanditSecretStep(3);
         flashSignal("CLICK");
-        completeSecretUnlock(9, setBanditSecretUnlocked);
+        unlockedSecretThisClick = completeSecretUnlock(9, setBanditSecretUnlocked);
       } else if (clickedBanditStepOne || clickedBanditStepTwo) {
         setBanditSecretStep(clickedBanditStepOne ? 1 : 0);
       }
@@ -1869,7 +1870,9 @@ export default function Home() {
     if (hit) {
       setFound(true);
       setHint("");
-      setStatusMessage("");
+      if (!unlockedSecretThisClick) {
+        setStatusMessage("");
+      }
 
       if (currentLevel < 3) {
         const nextLevel = currentLevel + 1;
@@ -1904,7 +1907,7 @@ export default function Home() {
     } else {
       const nextClicks = clicks + 1;
 
-      if (triggeredSecretMessage) {
+      if (triggeredSecretMessage || unlockedSecretThisClick) {
         // mantém a mensagem secreta visível
       } else if (nextClicks >= MAX_CLICKS && distance === 1) {
         flashStatus("Era literalmente ao lado…");
