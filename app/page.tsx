@@ -1962,9 +1962,9 @@ export default function Home() {
 
     if (finalCelebration) {
       const rewardsLine =
-        collectedRewards.length > 0
-        ? `\nConquistas: ${collectedRewards.map((reward) => reward.emoji).join(" ")}`
-        : `\nConquistas: nenhuma ainda`;
+  collectedRewards.length > 0
+    ? `\nConquistas: ${collectedRewards.map((reward) => reward.emoji).join(" ")}`
+    : `\nConquistas: nenhuma ainda`;
 
       const respectLine = hasReward("speed")
         ? `
