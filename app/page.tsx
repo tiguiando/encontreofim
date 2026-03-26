@@ -3043,7 +3043,7 @@ ${SHARE_LINK}`;
               isMobile ? "px-4 py-2 text-sm rounded-lg" : "px-5 py-3 rounded-xl"
             }`}
           >
-            Resetar partida
+            Denovo!
           </button>
 
           {canShare && (
