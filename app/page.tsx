@@ -709,6 +709,8 @@ export default function Home() {
   const [sleepMode, setSleepMode] = useState(false);
   const [totalElapsed, setTotalElapsed] = useState(0);
   const [gameOver, setGameOver] = useState(false);
+  const [mainRunFinishedSeconds, setMainRunFinishedSeconds] = useState<number | null>(null);
+  const [mainRunFinishedMessage, setMainRunFinishedMessage] = useState("");
 
   const [heartSecretProgress, setHeartSecretProgress] = useState<number[]>([]);
   const [heartSecretUnlocked, setHeartSecretUnlocked] = useState(false);
@@ -768,6 +770,7 @@ export default function Home() {
   const [isMobile, setIsMobile] = useState(false);
 
   const sessionStartRef = useRef<number | null>(null);
+  const mainRunStartRef = useRef<number | null>(null);
 
   const rabbitRunStartRef = useRef<number | null>(null);
   const rabbitRunSequenceRef = useRef<number[]>([]);
@@ -796,10 +799,25 @@ export default function Home() {
     [currentLevel]
   );
 
-  const finalMessage = useMemo(
-    () => getFinalMessage(totalElapsed),
-    [totalElapsed]
-  );
+  function resetMainRunTimer() {
+    mainRunStartRef.current = null;
+    setMainRunFinishedSeconds(null);
+    setMainRunFinishedMessage("");
+  }
+
+  function startMainRunTimer() {
+    if (!mainRunStartRef.current) {
+      mainRunStartRef.current = Date.now();
+    }
+  }
+
+  function finishMainRunTimer() {
+    if (!mainRunStartRef.current) return;
+
+    const elapsed = Math.floor((Date.now() - mainRunStartRef.current) / 1000);
+    setMainRunFinishedSeconds(elapsed);
+    setMainRunFinishedMessage(getFinalMessage(elapsed));
+  }
 
   const displayRanking = useMemo(() => ranking.slice(0, 10), [ranking]);
 
@@ -1010,7 +1028,7 @@ export default function Home() {
 
     const newEntry = {
       playerName: playerName.trim().slice(0, 12),
-      totalTime: totalElapsed,
+      totalTime: mainRunFinishedSeconds ?? totalElapsed,
       secrets: collectedRewards.map((reward) => reward.emoji),
     };
 
@@ -1118,8 +1136,12 @@ export default function Home() {
 
     resetRabbitRunSequence();
     resetTrollRunSequence();
+    resetMainRunTimer();
 
     const now = Date.now();
+    sessionStartRef.current = now;
+    startMainRunTimer();
+    setTotalElapsed(0);
     lastBossActionRef.current = now;
     lastInteractionRef.current = now;
     lastKnockRef.current = now;
@@ -1240,6 +1262,7 @@ export default function Home() {
     setRevealedKeyCell(null);
 
     if (currentLevel === 1 && !level.isSecret) {
+      startMainRunTimer();
       startRabbitRun();
       if (trollMode) startTrollRun();
     }
@@ -1414,6 +1437,7 @@ export default function Home() {
 
   useEffect(() => {
     startSessionTimer();
+    startMainRunTimer();
     const now = Date.now();
     lastInteractionRef.current = now;
     lastKnockRef.current = now;
@@ -1948,6 +1972,7 @@ export default function Home() {
       } else if (currentLevel === 3) {
         markRabbitRunProgress(3);
         markTrollRunProgress(3);
+        finishMainRunTimer();
         setMainGameFinished(true);
       } else if (currentLevel === 4) {
         addReward("heart");
@@ -1993,6 +2018,9 @@ export default function Home() {
     if (finalCelebration || gameOver) return;
 
     touchInteraction();
+    if (levelId === 1 && !mainGameFinished) {
+      startMainRunTimer();
+    }
     setCurrentLevel(levelId);
   }
 
@@ -2074,16 +2102,6 @@ ${SHARE_LINK}`;
     }
   }
 
-  const showTime = !finalCelebration;
-  const showHint =
-    !found &&
-    clicks < MAX_CLICKS &&
-    !gameFinished &&
-    !sleepMode &&
-    !finalCelebration &&
-    !gameOver &&
-    (level.isSecret || !mainGameFinished);
-
   const showMainFinalMessage =
     mainGameFinished &&
     !finalCelebration &&
@@ -2093,6 +2111,18 @@ ${SHARE_LINK}`;
     currentLevel !== 7 &&
     currentLevel !== 8 &&
     currentLevel !== 9;
+
+  const showTime = !finalCelebration && !showMainFinalMessage;
+  const displayMainRunSeconds = mainRunFinishedSeconds ?? totalElapsed;
+
+  const showHint =
+    !found &&
+    clicks < MAX_CLICKS &&
+    !gameFinished &&
+    !sleepMode &&
+    !finalCelebration &&
+    !gameOver &&
+    (level.isSecret || !mainGameFinished);
 
   const showRankingSave =
     !finalCelebration &&
@@ -2650,7 +2680,7 @@ ${SHARE_LINK}`;
                 {finalThemePhrase}
               </p>
               <p className="text-zinc-200 font-semibold text-sm sm:text-base">
-                vc chegou aqui em {formatTime(totalElapsed)}
+                vc chegou aqui em {formatTime(displayMainRunSeconds)}
               </p>
               {hasReward("speed") && (
                 <p className="text-zinc-200 font-semibold text-sm sm:text-base">
@@ -2703,10 +2733,10 @@ ${SHARE_LINK}`;
               {showMainFinalMessage && (
                 <>
                   <p className="text-base sm:text-lg text-amber-300 font-semibold max-w-2xl">
-                    {finalMessage}
+                    {mainRunFinishedMessage}
                   </p>
                   <p className="text-green-400 text-lg sm:text-xl font-semibold">
-                    Tempo final: {formatTime(totalElapsed)}
+                    3 níveis em sequência: {formatTime(displayMainRunSeconds)}
                   </p>
                 </>
               )}
@@ -3045,7 +3075,7 @@ ${SHARE_LINK}`;
               isMobile ? "px-4 py-2 text-sm rounded-lg" : "px-5 py-3 rounded-xl"
             }`}
           >
-            Denovo!
+            Resetar partida
           </button>
 
           {canShare && (
@@ -3213,23 +3243,12 @@ ${SHARE_LINK}`;
       </div>
 
 
-            {!finalCelebration && (
+      {!finalCelebration && (
         <div
           className={`fixed left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 ${
             isMobile ? "bottom-12" : "bottom-14"
           }`}
         >
-          <button
-            onClick={() => setShowInstructions(true)}
-            className={`rounded-full border border-zinc-700 bg-zinc-900/90 hover:bg-zinc-800 text-white flex items-center justify-center transition shadow-lg ${
-              isMobile ? "w-11 h-11 text-lg" : "w-12 h-12 text-xl"
-            }`}
-            title="Abrir guia"
-            aria-label="Abrir guia"
-          >
-            📖
-          </button>
-
           <div
             className={`rounded-full border border-zinc-700 bg-zinc-900/90 text-white flex flex-col items-center justify-center shadow-lg ${
               isMobile ? "w-11 h-11" : "w-12 h-12"
@@ -3255,6 +3274,13 @@ ${SHARE_LINK}`;
       )}
 
       <div className="fixed bottom-2 left-1/2 -translate-x-1/2 z-40 flex items-center gap-4">
+        <button
+          onClick={() => setShowInstructions(true)}
+          className="text-[10px] sm:text-xs text-zinc-500/70 hover:text-zinc-300 transition tracking-[0.18em] uppercase"
+        >
+          GUIA
+        </button>
+
         <a
           href={HELP_DEV_LINK}
           target="_blank"
