@@ -1776,7 +1776,6 @@ export default function Home() {
 
         const distance = Math.abs(cell.col - treasure.col) + Math.abs(cell.row - treasure.row);
         setClickedCells((prev) => [...prev, key]);
-        setHint(getDirection(cell, treasure, level.cols, level.rows, trollMode));
         setClicks((c) => c + 1);
 
         if (!triggeredSecretMessage && clicks + 1 >= MAX_CLICKS && distance === 1) {
@@ -1803,7 +1802,6 @@ export default function Home() {
           flashStatus("Era literalmente ao lado…");
         }
 
-        setHint(getDirection(cell, treasure, level.cols, level.rows, trollMode));
         setClicks((c) => c + 1);
         return;
       }
@@ -1829,7 +1827,6 @@ export default function Home() {
           setStatusMessage("");
         }
 
-        setHint(getDirection(cell, treasure, level.cols, level.rows, trollMode));
         setClicks((c) => c + 1);
         return;
       }
