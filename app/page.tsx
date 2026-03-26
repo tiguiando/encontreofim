@@ -2044,7 +2044,8 @@ export default function Home() {
         ? `\nvoce tem o meu respeito. DEV`
         : "";
 
-      const totalLine = `\nTempo: ${formatTime(totalElapsed)}`;
+      const shareMainTime = mainRunFinishedSeconds ?? totalElapsed;
+    const totalLine = `\n3 níveis em sequência: ${formatTime(shareMainTime)}`;
 
       const text = `Eu conclui o desafio no Encontre o FIM e esse e o meu resultado.${totalLine}${rewardsLine}${respectLine}
 
@@ -3249,6 +3250,17 @@ ${SHARE_LINK}`;
             isMobile ? "bottom-12" : "bottom-14"
           }`}
         >
+          <button
+            onClick={() => setShowInstructions(true)}
+            className={`rounded-full border border-zinc-700 bg-zinc-900/90 hover:bg-zinc-800 text-white flex items-center justify-center transition shadow-lg ${
+              isMobile ? "w-11 h-11 text-lg" : "w-12 h-12 text-xl"
+            }`}
+            title="Abrir guia"
+            aria-label="Abrir guia"
+          >
+            📖
+          </button>
+
           <div
             className={`rounded-full border border-zinc-700 bg-zinc-900/90 text-white flex flex-col items-center justify-center shadow-lg ${
               isMobile ? "w-11 h-11" : "w-12 h-12"
@@ -3274,13 +3286,6 @@ ${SHARE_LINK}`;
       )}
 
       <div className="fixed bottom-2 left-1/2 -translate-x-1/2 z-40 flex items-center gap-4">
-        <button
-          onClick={() => setShowInstructions(true)}
-          className="text-[10px] sm:text-xs text-zinc-500/70 hover:text-zinc-300 transition tracking-[0.18em] uppercase"
-        >
-          GUIA
-        </button>
-
         <a
           href={HELP_DEV_LINK}
           target="_blank"
@@ -3290,6 +3295,7 @@ ${SHARE_LINK}`;
           HELP the DEV
         </a>
       </div>
+
     </main>
   );
 }
