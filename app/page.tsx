@@ -748,6 +748,7 @@ export default function Home() {
 
   const [bombCells, setBombCells] = useState<Cell[]>([]);
   const [levelTwoHintCells, setLevelTwoHintCells] = useState<HintEnvelope[]>([]);
+  const [openedHintCells, setOpenedHintCells] = useState<HintEnvelope[]>([]);
   const [foundHintCards, setFoundHintCards] = useState<HintEnvelopeId[]>([]);
 
   const [sixNineProgress, setSixNineProgress] = useState<Record<number, number>>({
@@ -1115,6 +1116,8 @@ export default function Home() {
     setGiftOpenedThisRun(false);
     setBombCells([]);
     setLevelTwoHintCells([]);
+    setOpenedHintCells([]);
+    setFoundHintCards([]);
     setFinalClickedCells([]);
     setLevelOneKeyCells([]);
     setRevealedKeyCell(null);
@@ -1346,6 +1349,7 @@ export default function Home() {
 
         setLevelThreeLockCell(null);
         setLevelTwoHintCells([]);
+        setOpenedHintCells([]);
 
         const bombs = randomManyCellsAvoiding(
           level.cols,
@@ -1395,6 +1399,7 @@ export default function Home() {
         }
 
         setLevelTwoHintCells(generatedHints);
+        setOpenedHintCells([]);
 
         const bombs = randomManyCellsAvoiding(
           level.cols,
@@ -1415,6 +1420,7 @@ export default function Home() {
         setLevelThreeLockCell(lockCell);
         setLevelOneKeyCells([]);
         setLevelTwoHintCells([]);
+        setOpenedHintCells([]);
         setDieCell(null);
 
         const blockedForBombs = new Set(blockedWithTreasure);
@@ -1433,6 +1439,7 @@ export default function Home() {
         setLevelThreeLockCell(null);
         setBombCells([]);
         setLevelTwoHintCells([]);
+        setOpenedHintCells([]);
         setDieCell(null);
       }
     }
@@ -2992,6 +2999,13 @@ ${SHARE_LINK}`;
                   col === revealedKeyCell.col &&
                   row === revealedKeyCell.row;
 
+                const openedEnvelope =
+                  currentLevel === 2
+                    ? openedHintCells.find(
+                        (item) => item.cell.col === col && item.cell.row === row
+                      )
+                    : null;
+
                 return (
                   <button
                     key={key}
@@ -3089,6 +3103,8 @@ ${SHARE_LINK}`;
                       "🔒"
                     ) : showFoundKey ? (
                       "🔑"
+                    ) : openedEnvelope ? (
+                      <span title={openedEnvelope.text}>📭</span>
                     ) : clicked ? (
                       "•"
                     ) : (
