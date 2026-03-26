@@ -65,7 +65,7 @@ const LEVELS: LevelConfig[] = [
   { id: 2, name: "Nível 2", cols: 14, rows: 8 },
   { id: 3, name: "Nível 3", cols: 18, rows: 10 },
   { id: 4, name: "Fase Secreta", cols: 11, rows: 9, isSecret: true, secretType: "heart" },
-  { id: 5, name: "FINAL BOSS", cols: 15, rows: 13, isSecret: true, secretType: "boss" },
+  { id: 5, name: "BOSS", cols: 15, rows: 13, isSecret: true, secretType: "boss" },
   { id: 6, name: "AREA 51", cols: 15, rows: 15, isSecret: true, secretType: "alien" },
   { id: 7, name: "ACE", cols: 15, rows: 15, isSecret: true, secretType: "ace" },
   { id: 8, name: "JACKPOT", cols: 15, rows: 15, isSecret: true, secretType: "jackpot" },
@@ -167,7 +167,7 @@ const INSTRUCTIONS_LINES = [
   "Sua mente está presa em uma caixa",
   "Para sair, siga os sinais no topo da tela e encontre o tesouro no último nivel",
   "Existem segredos escondidos entre os reinos",
-  "Sequências em CLICK podem desbloquear passagens secretas",
+  "Sequências em CLICK entre os níveis podem desbloquear passagens secretas",
   "DEVon distribuiu cartas no nível 2 como quem deixa migalhas para os perdidos",
   "Avance com cautela, esse é um campo minado",
   "Sua jornada pode ser repleta de conquistas",
@@ -714,6 +714,7 @@ export default function Home() {
   const [gameOver, setGameOver] = useState(false);
   const [mainRunFinishedSeconds, setMainRunFinishedSeconds] = useState<number | null>(null);
   const [mainRunFinishedMessage, setMainRunFinishedMessage] = useState("");
+  const [secretRunFinishedSeconds, setSecretRunFinishedSeconds] = useState<number | null>(null);
 
   const [heartSecretProgress, setHeartSecretProgress] = useState<number[]>([]);
   const [heartSecretUnlocked, setHeartSecretUnlocked] = useState(false);
@@ -775,6 +776,7 @@ export default function Home() {
 
   const sessionStartRef = useRef<number | null>(null);
   const mainRunStartRef = useRef<number | null>(null);
+  const secretRunStartRef = useRef<number | null>(null);
 
   const rabbitRunStartRef = useRef<number | null>(null);
   const rabbitRunSequenceRef = useRef<number[]>([]);
@@ -824,6 +826,23 @@ export default function Home() {
     const elapsed = Math.floor((Date.now() - mainRunStartRef.current) / 1000);
     setMainRunFinishedSeconds(elapsed);
     setMainRunFinishedMessage((prev) => prev || getFinalMessage(elapsed));
+  }
+
+  function resetSecretRunTimer() {
+    secretRunStartRef.current = null;
+    setSecretRunFinishedSeconds(null);
+  }
+
+  function startSecretRunTimer() {
+    if (!secretRunStartRef.current) {
+      secretRunStartRef.current = Date.now();
+    }
+  }
+
+  function finishSecretRunTimer() {
+    if (!secretRunStartRef.current) return;
+    const elapsed = Math.floor((Date.now() - secretRunStartRef.current) / 1000);
+    setSecretRunFinishedSeconds(elapsed);
   }
 
   const displayRanking = useMemo(() => ranking.slice(0, 10), [ranking]);
@@ -1146,6 +1165,7 @@ export default function Home() {
     resetRabbitRunSequence();
     resetTrollRunSequence();
     resetMainRunTimer();
+    resetSecretRunTimer();
     turtleRunActiveRef.current = false;
     turtleTriggeredRef.current = false;
 
@@ -1276,6 +1296,12 @@ export default function Home() {
       turtleRunActiveRef.current = true;
       turtleTriggeredRef.current = false;
       if (trollMode) startTrollRun();
+    }
+
+    if (level.isSecret) {
+      startSecretRunTimer();
+    } else {
+      resetSecretRunTimer();
     }
 
     if (level.secretType === "heart") {
@@ -2010,21 +2036,27 @@ export default function Home() {
         finishMainRunTimer();
         setMainGameFinished(true);
       } else if (currentLevel === 4) {
+        finishSecretRunTimer();
         addReward("heart");
         setGameFinished(true);
       } else if (currentLevel === 5) {
+        finishSecretRunTimer();
         addReward("boss");
         setGameFinished(true);
       } else if (currentLevel === 6) {
+        finishSecretRunTimer();
         addReward("alien");
         setGameFinished(true);
       } else if (currentLevel === 7) {
+        finishSecretRunTimer();
         addReward("ace");
         setGameFinished(true);
       } else if (currentLevel === 8) {
+        finishSecretRunTimer();
         addReward("jackpot");
         setGameFinished(true);
       } else if (currentLevel === 9) {
+        finishSecretRunTimer();
         addReward("bandit");
         setGameFinished(true);
       }
@@ -2070,6 +2102,7 @@ export default function Home() {
     touchInteraction();
 
     const shareMainTime = mainRunFinishedSeconds ?? totalElapsed;
+    const shareSecretTime = secretRunFinishedSeconds ?? totalElapsed;
     const rewardsLine =
       collectedRewards.length > 0
         ? `\nConquistas: ${collectedRewards.map((reward) => reward.emoji).join(" ")}`
@@ -2078,9 +2111,9 @@ export default function Home() {
       ? `Eu encontrei o FIM em ${formatTime(totalElapsed)}${rewardsLine}
 
 ${SHARE_LINK}`
-      : `Eu joguei o jogo Encontre o FIM...\nSequência mais rápida: ${formatTime(shareMainTime)}${rewardsLine}
-
-${SHARE_LINK}`;
+      : found && level.isSecret
+        ? `Eu joguei o jogo Encontre o FIM...\nTempo final: ${formatTime(shareSecretTime)}${rewardsLine}\n\n${SHARE_LINK}`
+        : `Eu joguei o jogo Encontre o FIM...\nSequência mais rápida: ${formatTime(shareMainTime)}${rewardsLine}\n\n${SHARE_LINK}`;
 
     try {
       if (navigator.share) {
@@ -2109,7 +2142,7 @@ ${SHARE_LINK}`;
     currentLevel !== 8 &&
     currentLevel !== 9;
 
-  const showTime = !finalCelebration && !showMainFinalMessage;
+  const showTime = !finalCelebration && !showMainFinalMessage && !(found && level.isSecret);
   const displayMainRunSeconds = mainRunFinishedSeconds ?? totalElapsed;
 
   const showHint =
@@ -2549,7 +2582,7 @@ ${SHARE_LINK}`;
             : level.secretType === "heart"
               ? "Fase Secreta"
               : level.secretType === "boss"
-                ? "FINAL BOSS"
+                ? "BOSS"
                 : level.secretType === "alien"
                   ? "AREA 51"
                   : level.secretType === "ace"
@@ -2667,7 +2700,7 @@ ${SHARE_LINK}`;
             !sleepMode &&
             !gameOver && (
               <p className="text-zinc-200 font-semibold text-sm sm:text-base">
-                Ajude a encontrar o golpista e coloque ele atras das grades.
+                Ajude a encontrar o golpista e coloque ele atrás das grades.
               </p>
             )}
 
@@ -2740,7 +2773,7 @@ ${SHARE_LINK}`;
 
               {found && level.isSecret && (
                 <p className="text-green-400 text-lg sm:text-xl font-semibold">
-                  Tempo final: {formatTime(totalElapsed)}
+                  Tempo final: {formatTime(secretRunFinishedSeconds ?? totalElapsed)}
                 </p>
               )}
 
@@ -3125,7 +3158,7 @@ ${SHARE_LINK}`;
               isMobile ? "px-4 py-2 text-sm rounded-lg" : "px-5 py-3 rounded-xl"
             }`}
           >
-            Enfrentar FINAL BOSS
+            Enfrentar BOSS
           </button>
         )}
 
