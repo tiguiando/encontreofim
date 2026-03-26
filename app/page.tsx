@@ -170,6 +170,7 @@ const INSTRUCTIONS_LINES = [
   "Dizem que DEVon passou pelo reino seguinte ao primeiro, distribuindo cartas como quem deixa migalhas para os perdidos",
   "Avance com cautela",
   "Mas cuidado: nem toda pista foi feita para salvar você",
+  "Apenas quem tem 5 conquistas é digno do fim",
   "O fim nem sempre é o fim",
 ];
 
