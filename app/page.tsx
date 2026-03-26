@@ -54,7 +54,6 @@ const HELP_DEV_LINK =
   "https://www.youtube.com/@tiguiando?sub_confirmation=1&sub_confirmation=1";
 
 const MAX_CLICKS = 5;
-const SLEEP_LIMIT_SECONDS = 33 * 60 + 33;
 const IDLE_KNOCK_MS = 33_000;
 const MESSAGE_MS = 3000;
 const RABBIT_RUN_LIMIT_SECONDS = 10;
@@ -1474,17 +1473,14 @@ export default function Home() {
         now - lastInteractionRef.current >= TURTLE_IDLE_LIMIT_MS
       ) {
         turtleTriggeredRef.current = true;
-      }
-
-      if (!level.isSecret && elapsed >= SLEEP_LIMIT_SECONDS && !sleepMode && !finalCelebration) {
-        setSleepMode(true);
-        setHint("");
-        setStatusMessage("VOLTE QUANDO ACORDAR.");
+        addReward("slow");
+        turtleRunActiveRef.current = false;
+        flashStatus("🐢 Você foi ultrapassado por uma tartaruga.");
       }
     }, 250);
 
     return () => clearInterval(interval);
-  }, [level.isSecret, sleepMode, finalCelebration, currentLevel]);
+  }, [currentLevel, finalCelebration]);
 
   useEffect(() => {
     if (sleepMode || mainGameFinished || gameFinished || finalCelebration || gameOver) return;
@@ -2011,10 +2007,6 @@ export default function Home() {
       } else if (currentLevel === 3) {
         markRabbitRunProgress(3);
         markTrollRunProgress(3);
-        if (turtleRunActiveRef.current && turtleTriggeredRef.current && !hasReward("slow")) {
-          addReward("slow");
-          setMainRunFinishedMessage("🐢 Você foi ultrapassado por uma tartaruga.");
-        }
         turtleRunActiveRef.current = false;
         turtleTriggeredRef.current = false;
         finishMainRunTimer();
