@@ -57,7 +57,8 @@ const MAX_CLICKS = 5;
 const SLEEP_LIMIT_SECONDS = 33 * 60 + 33;
 const IDLE_KNOCK_MS = 33_000;
 const MESSAGE_MS = 3000;
-const SPEED_RUN_LIMIT_SECONDS = 60;
+const RABBIT_RUN_LIMIT_SECONDS = 10;
+const BRAIN_RUN_LIMIT_SECONDS = 60;
 
 const LEVELS: LevelConfig[] = [
   { id: 1, name: "Nível 1", cols: 10, rows: 6 },
@@ -858,43 +859,43 @@ export default function Home() {
   }
 
   function markRabbitRunProgress(levelCompleted: number) {
-    if (hasReward("speed")) return;
-    if (levelCompleted < 1 || levelCompleted > 3) return;
-    if (!rabbitRunStartRef.current) return;
+  if (hasReward("speed")) return;
+  if (levelCompleted < 1 || levelCompleted > 3) return;
+  if (!rabbitRunStartRef.current) return;
 
-    const now = Date.now();
-    const elapsed = Math.floor((now - rabbitRunStartRef.current) / 1000);
+  const now = Date.now();
+  const elapsed = Math.floor((now - rabbitRunStartRef.current) / 1000);
 
-    if (elapsed > SPEED_RUN_LIMIT_SECONDS) {
-      resetRabbitRunSequence();
-      return;
-    }
-
-    const sequence = rabbitRunSequenceRef.current;
-
-    if (levelCompleted === 1) {
-      rabbitRunSequenceRef.current = [1];
-      return;
-    }
-
-    if (levelCompleted === 2) {
-      if (sequence.length === 1 && sequence[0] === 1) {
-        rabbitRunSequenceRef.current = [1, 2];
-      } else {
-        resetRabbitRunSequence();
-      }
-      return;
-    }
-
-    if (levelCompleted === 3) {
-      if (sequence.length === 2 && sequence[0] === 1 && sequence[1] === 2) {
-        if (elapsed < SPEED_RUN_LIMIT_SECONDS) {
-          addReward("speed");
-        }
-      }
-      resetRabbitRunSequence();
-    }
+  if (elapsed > RABBIT_RUN_LIMIT_SECONDS) {
+    resetRabbitRunSequence();
+    return;
   }
+
+  const sequence = rabbitRunSequenceRef.current;
+
+  if (levelCompleted === 1) {
+    rabbitRunSequenceRef.current = [1];
+    return;
+  }
+
+  if (levelCompleted === 2) {
+    if (sequence.length === 1 && sequence[0] === 1) {
+      rabbitRunSequenceRef.current = [1, 2];
+    } else {
+      resetRabbitRunSequence();
+    }
+    return;
+  }
+
+  if (levelCompleted === 3) {
+    if (sequence.length === 2 && sequence[0] === 1 && sequence[1] === 2) {
+      if (elapsed <= RABBIT_RUN_LIMIT_SECONDS) {
+        addReward("speed");
+      }
+    }
+    resetRabbitRunSequence();
+  }
+}
 
   function resetTrollRunSequence() {
     trollRunStartRef.current = null;
@@ -907,44 +908,44 @@ export default function Home() {
   }
 
   function markTrollRunProgress(levelCompleted: number) {
-    if (!trollMode) return;
-    if (hasReward("brain")) return;
-    if (levelCompleted < 1 || levelCompleted > 3) return;
-    if (!trollRunStartRef.current) return;
+  if (!trollMode) return;
+  if (hasReward("brain")) return;
+  if (levelCompleted < 1 || levelCompleted > 3) return;
+  if (!trollRunStartRef.current) return;
 
-    const now = Date.now();
-    const elapsed = Math.floor((now - trollRunStartRef.current) / 1000);
+  const now = Date.now();
+  const elapsed = Math.floor((now - trollRunStartRef.current) / 1000);
 
-    if (elapsed > SPEED_RUN_LIMIT_SECONDS) {
-      resetTrollRunSequence();
-      return;
-    }
-
-    const sequence = trollRunSequenceRef.current;
-
-    if (levelCompleted === 1) {
-      trollRunSequenceRef.current = [1];
-      return;
-    }
-
-    if (levelCompleted === 2) {
-      if (sequence.length === 1 && sequence[0] === 1) {
-        trollRunSequenceRef.current = [1, 2];
-      } else {
-        resetTrollRunSequence();
-      }
-      return;
-    }
-
-    if (levelCompleted === 3) {
-      if (sequence.length === 2 && sequence[0] === 1 && sequence[1] === 2) {
-        if (elapsed < SPEED_RUN_LIMIT_SECONDS) {
-          addReward("brain");
-        }
-      }
-      resetTrollRunSequence();
-    }
+  if (elapsed > BRAIN_RUN_LIMIT_SECONDS) {
+    resetTrollRunSequence();
+    return;
   }
+
+  const sequence = trollRunSequenceRef.current;
+
+  if (levelCompleted === 1) {
+    trollRunSequenceRef.current = [1];
+    return;
+  }
+
+  if (levelCompleted === 2) {
+    if (sequence.length === 1 && sequence[0] === 1) {
+      trollRunSequenceRef.current = [1, 2];
+    } else {
+      resetTrollRunSequence();
+    }
+    return;
+  }
+
+  if (levelCompleted === 3) {
+    if (sequence.length === 2 && sequence[0] === 1 && sequence[1] === 2) {
+      if (elapsed <= BRAIN_RUN_LIMIT_SECONDS) {
+        addReward("brain");
+      }
+    }
+    resetTrollRunSequence();
+  }
+}
 
   function touchInteraction() {
     const now = Date.now();
