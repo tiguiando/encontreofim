@@ -2069,55 +2069,15 @@ export default function Home() {
   async function handleShare() {
     touchInteraction();
 
-    if (finalCelebration) {
-      const rewardsLine =
-        collectedRewards.length > 0
-          ? `\nConquistas: ${collectedRewards.map((reward) => reward.emoji).join(" ")}`
-          : "\nConquistas: nenhuma ainda";
-
-      const respectLine = hasReward("speed")
-        ? `\nvoce tem o meu respeito. DEV`
-        : "";
-
-      const shareMainTime = mainRunFinishedSeconds ?? totalElapsed;
-    const totalLine = `\n3 níveis em sequência: ${formatTime(shareMainTime)}`;
-
-      const text = `Eu conclui o desafio no Encontre o FIM e esse e o meu resultado.${totalLine}${rewardsLine}${respectLine}
-
-Vai encarar?
-
-${SHARE_LINK}`;
-
-      try {
-        if (navigator.share) {
-          await navigator.share({
-            title: "Encontre o Fim",
-            text,
-          });
-        } else {
-          await navigator.clipboard.writeText(text);
-          setShareMessage("Resultado copiado para a área de transferência.");
-          setTimeout(() => setShareMessage(""), 2500);
-        }
-      } catch {
-        setShareMessage("Não foi possível compartilhar agora.");
-        setTimeout(() => setShareMessage(""), 2500);
-      }
-
-      return;
-    }
-
-    const resultLine = found ? "Resultado: vitoria" : gameOver ? "Resultado: game over" : "Resultado: tentativa encerrada";
+    const shareMainTime = mainRunFinishedSeconds ?? totalElapsed;
+    const recordLine = `\nSequência mais rápida: ${formatTime(shareMainTime)}`;
     const rewardsLine =
       collectedRewards.length > 0
         ? `\nConquistas: ${collectedRewards.map((reward) => reward.emoji).join(" ")}`
         : "";
+    const fimLine = finalCelebration ? "\nEU ENCONTREI O FIM!" : "";
 
-    const text = `Eu conclui o desafio no Encontre o FIM e esse e o meu resultado.
-${resultLine}
-Tempo: ${formatTime(totalElapsed)}${rewardsLine}
-
-Vai encarar?
+    const text = `Eu joguei o jogo Encontre o FIM...${recordLine}${rewardsLine}${fimLine}
 
 ${SHARE_LINK}`;
 
