@@ -3211,12 +3211,23 @@ ${SHARE_LINK}`;
       </div>
 
 
-      {!finalCelebration && (
+            {!finalCelebration && (
         <div
           className={`fixed left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 ${
             isMobile ? "bottom-12" : "bottom-14"
           }`}
         >
+          <button
+            onClick={() => setShowInstructions(true)}
+            className={`rounded-full border border-zinc-700 bg-zinc-900/90 hover:bg-zinc-800 text-white flex items-center justify-center transition shadow-lg ${
+              isMobile ? "w-11 h-11 text-lg" : "w-12 h-12 text-xl"
+            }`}
+            title="Abrir guia"
+            aria-label="Abrir guia"
+          >
+            📖
+          </button>
+
           <div
             className={`rounded-full border border-zinc-700 bg-zinc-900/90 text-white flex flex-col items-center justify-center shadow-lg ${
               isMobile ? "w-11 h-11" : "w-12 h-12"
@@ -3242,13 +3253,6 @@ ${SHARE_LINK}`;
       )}
 
       <div className="fixed bottom-2 left-1/2 -translate-x-1/2 z-40 flex items-center gap-4">
-        <button
-          onClick={() => setShowInstructions(true)}
-          className="text-[10px] sm:text-xs text-zinc-500/70 hover:text-zinc-300 transition tracking-[0.18em] uppercase"
-        >
-          GUIA
-        </button>
-
         <a
           href={HELP_DEV_LINK}
           target="_blank"
