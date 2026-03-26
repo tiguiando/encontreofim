@@ -59,6 +59,7 @@ const IDLE_KNOCK_MS = 33_000;
 const MESSAGE_MS = 3000;
 const RABBIT_RUN_LIMIT_SECONDS = 10;
 const BRAIN_RUN_LIMIT_SECONDS = 60;
+const TURTLE_IDLE_LIMIT_MS = 33 * 60 * 1000 + 33 * 1000;
 
 const LEVELS: LevelConfig[] = [
   { id: 1, name: "Nível 1", cols: 10, rows: 6 },
@@ -778,6 +779,9 @@ export default function Home() {
   const trollRunStartRef = useRef<number | null>(null);
   const trollRunSequenceRef = useRef<number[]>([]);
 
+  const turtleRunActiveRef = useRef(false);
+  const turtleTriggeredRef = useRef(false);
+
   const lastBossActionRef = useRef<number | null>(null);
   const lastInteractionRef = useRef<number>(Date.now());
   const lastKnockRef = useRef<number>(Date.now());
@@ -816,7 +820,7 @@ export default function Home() {
 
     const elapsed = Math.floor((Date.now() - mainRunStartRef.current) / 1000);
     setMainRunFinishedSeconds(elapsed);
-    setMainRunFinishedMessage(getFinalMessage(elapsed));
+    setMainRunFinishedMessage((prev) => prev || getFinalMessage(elapsed));
   }
 
   const displayRanking = useMemo(() => ranking.slice(0, 10), [ranking]);
@@ -1137,6 +1141,8 @@ export default function Home() {
     resetRabbitRunSequence();
     resetTrollRunSequence();
     resetMainRunTimer();
+    turtleRunActiveRef.current = false;
+    turtleTriggeredRef.current = false;
 
     const now = Date.now();
     startMainRunTimer();
@@ -1262,6 +1268,8 @@ export default function Home() {
     if (currentLevel === 1 && !level.isSecret) {
       startMainRunTimer();
       startRabbitRun();
+      turtleRunActiveRef.current = true;
+      turtleTriggeredRef.current = false;
       if (trollMode) startTrollRun();
     }
 
@@ -1445,22 +1453,29 @@ export default function Home() {
     const interval = setInterval(() => {
       if (!sessionStartRef.current) return;
 
-      const elapsed = Math.floor((Date.now() - sessionStartRef.current) / 1000);
+      const now = Date.now();
+      const elapsed = Math.floor((now - sessionStartRef.current) / 1000);
       setTotalElapsed(elapsed);
+
+      if (
+        turtleRunActiveRef.current &&
+        !turtleTriggeredRef.current &&
+        currentLevel >= 1 &&
+        currentLevel <= 3 &&
+        now - lastInteractionRef.current >= TURTLE_IDLE_LIMIT_MS
+      ) {
+        turtleTriggeredRef.current = true;
+      }
 
       if (!level.isSecret && elapsed >= SLEEP_LIMIT_SECONDS && !sleepMode && !finalCelebration) {
         setSleepMode(true);
         setHint("");
         setStatusMessage("VOLTE QUANDO ACORDAR.");
-
-        if (!hasReward("slow")) {
-          addReward("slow");
-        }
       }
     }, 250);
 
     return () => clearInterval(interval);
-  }, [level.isSecret, sleepMode, finalCelebration]);
+  }, [level.isSecret, sleepMode, finalCelebration, currentLevel]);
 
   useEffect(() => {
     if (sleepMode || mainGameFinished || gameFinished || finalCelebration || gameOver) return;
@@ -1509,6 +1524,17 @@ export default function Home() {
 
     return () => clearInterval(interval);
   }, [level.secretType, found, gameFinished, sleepMode, finalCelebration, gameOver, clicks]);
+
+
+  useEffect(() => {
+    if (
+      (!level.isSecret && currentLevel >= 1 && currentLevel <= 3 && clicks >= MAX_CLICKS && !found) ||
+      gameOver
+    ) {
+      turtleRunActiveRef.current = false;
+      turtleTriggeredRef.current = false;
+    }
+  }, [clicks, found, gameOver, currentLevel, level.isSecret]);
 
   useEffect(() => {
     return () => {
@@ -1713,6 +1739,8 @@ export default function Home() {
       setGameOver(true);
       setHint("");
       setStatusMessage("GAME OVER");
+      turtleRunActiveRef.current = false;
+      turtleTriggeredRef.current = false;
       return;
     }
 
@@ -1970,6 +1998,12 @@ export default function Home() {
       } else if (currentLevel === 3) {
         markRabbitRunProgress(3);
         markTrollRunProgress(3);
+        if (turtleRunActiveRef.current && turtleTriggeredRef.current && !hasReward("slow")) {
+          addReward("slow");
+          setMainRunFinishedMessage("🐢 Você foi ultrapassado por uma tartaruga.");
+        }
+        turtleRunActiveRef.current = false;
+        turtleTriggeredRef.current = false;
         finishMainRunTimer();
         setMainGameFinished(true);
       } else if (currentLevel === 4) {
