@@ -1761,7 +1761,12 @@ export default function Home() {
       );
 
       if (envelope) {
-        setFoundHintCards((prev) => [...prev, envelope.id]);
+        setFoundHintCards((prev) => (prev.includes(envelope.id) ? prev : [...prev, envelope.id]));
+        setOpenedHintCells((prev) =>
+          prev.some((item) => item.cell.col === cell.col && item.cell.row === cell.row)
+            ? prev
+            : [...prev, envelope]
+        );
         setLevelTwoHintCells((prev) =>
           prev.filter(
             (item) => !(item.cell.col === cell.col && item.cell.row === cell.row)
