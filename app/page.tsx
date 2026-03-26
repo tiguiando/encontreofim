@@ -165,14 +165,16 @@ const FIM_PATTERN = [
 ];
 
 const INSTRUCTIONS_LINES = [
-  "Existem segredos escondidos entre os reinos",
   "Sua mente está presa em uma caixa",
-  "Para sair, encontre o tesouro e siga os sinais no topo da tela",
-  "Dizem que DEVon passou pelo reino seguinte ao primeiro, distribuindo cartas como quem deixa migalhas para os perdidos",
-  "Avance com cautela",
-  "Mas cuidado: nem toda pista foi feita para salvar você",
+  "Para sair, siga os sinais no topo da tela e encontre o tesouro no último nivel",
+  "Existem segredos escondidos entre os reinos",
+  "Sequências em CLICK podem desbloquear passagens secretas",
+  "Dizem que DEVon passou pelo reino do meio, distribuindo cartas como quem deixa migalhas para os perdidos",
+  "Avance com cautela, esse é um campo minado",
+  "Sua jornada pode ser repleta de conquistas",
   "Apenas quem tem 5 conquistas é digno do fim",
   "O fim nem sempre é o fim",
+  "BOA SORTE",
 ];
 
 function invertDirection(direction: string) {
