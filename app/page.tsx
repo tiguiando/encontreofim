@@ -772,6 +772,7 @@ export default function Home() {
   const [dieUsed, setDieUsed] = useState(false);
 
   const [viewportWidth, setViewportWidth] = useState(1200);
+  const [viewportHeight, setViewportHeight] = useState(900);
   const [isMobile, setIsMobile] = useState(false);
 
   const sessionStartRef = useRef<number | null>(null);
@@ -840,9 +841,12 @@ export default function Home() {
   }
 
   function finishSecretRunTimer() {
-    if (!secretRunStartRef.current) return;
-    const elapsed = Math.floor((Date.now() - secretRunStartRef.current) / 1000);
-    setSecretRunFinishedSeconds(elapsed);
+    if (sessionStartRef.current) {
+      const elapsed = Math.floor((Date.now() - sessionStartRef.current) / 1000);
+      setSecretRunFinishedSeconds(elapsed);
+      return;
+    }
+    setSecretRunFinishedSeconds(totalElapsed);
   }
 
   const displayRanking = useMemo(() => ranking.slice(0, 10), [ranking]);
@@ -859,8 +863,19 @@ export default function Home() {
 
   const responsiveCellSize = useMemo(() => {
     const availableWidth = viewportWidth - horizontalPadding;
-    const totalGap = (level.cols - 1) * boardGapPx;
-    const raw = Math.floor((availableWidth - totalGap) / level.cols);
+    const totalGapX = (level.cols - 1) * boardGapPx;
+    const rawWidth = Math.floor((availableWidth - totalGapX) / level.cols);
+
+    const reservedHeight = finalCelebration
+      ? (isMobile ? 300 : 330)
+      : level.isSecret
+        ? (isMobile ? 360 : 420)
+        : (isMobile ? 320 : 380);
+
+    const availableHeight = Math.max(220, viewportHeight - reservedHeight);
+    const totalGapY = (level.rows - 1) * boardGapPx;
+    const rawHeight = Math.floor((availableHeight - totalGapY) / level.rows);
+    const raw = Math.min(rawWidth, rawHeight);
 
     if (finalCelebration) {
       if (isMobile) return Math.max(16, Math.min(raw, 28));
@@ -868,20 +883,26 @@ export default function Home() {
     }
 
     if (isMobile) {
-      return Math.max(18, Math.min(raw, 32));
+      return Math.max(16, Math.min(raw, 32));
     }
 
-    return Math.max(32, Math.min(raw, 46));
-  }, [viewportWidth, level.cols, boardGapPx, horizontalPadding, isMobile, finalCelebration]);
+    return Math.max(22, Math.min(raw, 46));
+  }, [viewportWidth, viewportHeight, level.cols, level.rows, level.isSecret, boardGapPx, horizontalPadding, isMobile, finalCelebration]);
 
   const finalCellSize = useMemo(() => {
     const availableWidth = viewportWidth - horizontalPadding;
-    const totalGap = (FIM_PATTERN[0].length - 1) * boardGapPx;
-    const raw = Math.floor((availableWidth - totalGap) / FIM_PATTERN[0].length);
+    const totalGapX = (FIM_PATTERN[0].length - 1) * boardGapPx;
+    const rawWidth = Math.floor((availableWidth - totalGapX) / FIM_PATTERN[0].length);
+
+    const reservedHeight = isMobile ? 300 : 330;
+    const availableHeight = Math.max(180, viewportHeight - reservedHeight);
+    const totalGapY = (FIM_PATTERN.length - 1) * boardGapPx;
+    const rawHeight = Math.floor((availableHeight - totalGapY) / FIM_PATTERN.length);
+    const raw = Math.min(rawWidth, rawHeight);
 
     if (isMobile) return Math.max(16, Math.min(raw, 28));
     return Math.max(24, Math.min(raw, 46));
-  }, [viewportWidth, horizontalPadding, boardGapPx, isMobile]);
+  }, [viewportWidth, viewportHeight, horizontalPadding, boardGapPx, isMobile]);
 
   function hasReward(id: RewardId) {
     return collectedRewards.some((reward) => reward.id === id);
@@ -1179,7 +1200,9 @@ export default function Home() {
   useEffect(() => {
     function updateViewport() {
       const width = window.innerWidth;
+      const height = window.innerHeight;
       setViewportWidth(width);
+      setViewportHeight(height);
       setIsMobile(width < 768);
     }
 
@@ -2102,18 +2125,15 @@ export default function Home() {
     touchInteraction();
 
     const shareMainTime = mainRunFinishedSeconds ?? totalElapsed;
-    const shareSecretTime = secretRunFinishedSeconds ?? totalElapsed;
     const rewardsLine =
       collectedRewards.length > 0
         ? `\nConquistas: ${collectedRewards.map((reward) => reward.emoji).join(" ")}`
         : "";
-    const text = finalCelebration
-      ? `Eu encontrei o FIM em ${formatTime(totalElapsed)}${rewardsLine}
+    const fimLine = finalCelebration
+      ? "\nEU ENCONTREI O FIM!"
+      : "\n ";
 
-${SHARE_LINK}`
-      : found && level.isSecret
-        ? `Eu joguei o jogo Encontre o FIM...\nTempo final: ${formatTime(shareSecretTime)}${rewardsLine}\n\n${SHARE_LINK}`
-        : `Eu joguei o jogo Encontre o FIM...\nSequência mais rápida: ${formatTime(shareMainTime)}${rewardsLine}\n\n${SHARE_LINK}`;
+    const text = `Eu joguei o jogo Encontre o FIM...\nSequência mais rápida: ${formatTime(shareMainTime)}${rewardsLine}${fimLine}\n\n${SHARE_LINK}`;
 
     try {
       if (navigator.share) {
