@@ -2070,14 +2070,15 @@ export default function Home() {
     touchInteraction();
 
     const shareMainTime = mainRunFinishedSeconds ?? totalElapsed;
-    const recordLine = `\nSequência mais rápida: ${formatTime(shareMainTime)}`;
     const rewardsLine =
       collectedRewards.length > 0
         ? `\nConquistas: ${collectedRewards.map((reward) => reward.emoji).join(" ")}`
         : "";
-    const fimLine = finalCelebration ? "\nEU ENCONTREI O FIM!" : "";
+    const text = finalCelebration
+      ? `Eu encontrei o FIM em ${formatTime(totalElapsed)}${rewardsLine}
 
-    const text = `Eu joguei o jogo Encontre o FIM...${recordLine}${rewardsLine}${fimLine}
+${SHARE_LINK}`
+      : `Eu joguei o jogo Encontre o FIM...\nSequência mais rápida: ${formatTime(shareMainTime)}${rewardsLine}
 
 ${SHARE_LINK}`;
 
@@ -2676,7 +2677,7 @@ ${SHARE_LINK}`;
                 {finalThemePhrase}
               </p>
               <p className="text-zinc-200 font-semibold text-sm sm:text-base">
-                vc chegou aqui em {formatTime(displayMainRunSeconds)}
+                vc chegou aqui em {formatTime(totalElapsed)}
               </p>
               {hasReward("speed") && (
                 <p className="text-zinc-200 font-semibold text-sm sm:text-base">
