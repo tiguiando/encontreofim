@@ -1846,7 +1846,6 @@ export default function Home() {
       addReward("gift");
       flashSignal("CLICK");
       flashStatus("Um presente foi liberado.");
-      setClicks((c) => c + 1);
       return;
     }
 
