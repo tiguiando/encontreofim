@@ -1139,9 +1139,7 @@ export default function Home() {
     resetMainRunTimer();
 
     const now = Date.now();
-    sessionStartRef.current = now;
     startMainRunTimer();
-    setTotalElapsed(0);
     lastBossActionRef.current = now;
     lastInteractionRef.current = now;
     lastKnockRef.current = now;
@@ -3076,7 +3074,7 @@ ${SHARE_LINK}`;
               isMobile ? "px-4 py-2 text-sm rounded-lg" : "px-5 py-3 rounded-xl"
             }`}
           >
-            Mais uma vez!
+            MAIS UMA VEZ!
           </button>
 
           {canShare && (
