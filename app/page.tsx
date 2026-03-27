@@ -1985,11 +1985,7 @@ export default function Home() {
         setPasswordPreview(
           nextHeartSet
             .sort((a, b) => a - b)
-            .map((levelId) => {
-              if (levelId === 1) return String(LEVELS[0].cols * LEVELS[0].rows);
-              if (levelId === 2) return String(LEVELS[1].cols * LEVELS[1].rows);
-              return String(LEVELS[2].cols * LEVELS[2].rows);
-            })
+            .map(() => "0")
             .join(" ")
         );
         flashSignal("CLICK");
