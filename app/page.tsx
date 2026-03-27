@@ -715,6 +715,7 @@ export default function Home() {
   const [mainRunFinishedSeconds, setMainRunFinishedSeconds] = useState<number | null>(null);
   const [mainRunFinishedMessage, setMainRunFinishedMessage] = useState("");
   const [secretRunFinishedSeconds, setSecretRunFinishedSeconds] = useState<number | null>(null);
+  const [completionElapsedSeconds, setCompletionElapsedSeconds] = useState<number | null>(null);
 
   const [heartSecretProgress, setHeartSecretProgress] = useState<number[]>([]);
   const [heartSecretUnlocked, setHeartSecretUnlocked] = useState(false);
@@ -847,6 +848,15 @@ export default function Home() {
       return;
     }
     setSecretRunFinishedSeconds(totalElapsed);
+  }
+
+  function freezeCompletionElapsed() {
+    if (sessionStartRef.current) {
+      const elapsed = Math.floor((Date.now() - sessionStartRef.current) / 1000);
+      setCompletionElapsedSeconds(elapsed);
+      return;
+    }
+    setCompletionElapsedSeconds(totalElapsed);
   }
 
   const displayRanking = useMemo(() => ranking.slice(0, 10), [ranking]);
@@ -1060,6 +1070,7 @@ export default function Home() {
       const next = [...prev, REWARD_META[id]];
 
       if (next.length >= 5 && !fimUnlocked) {
+        freezeCompletionElapsed();
         setFimUnlocked(true);
         setFinalCelebration(true);
         setStatusMessage("");
@@ -1075,7 +1086,7 @@ export default function Home() {
 
     const newEntry = {
       playerName: playerName.trim().slice(0, 12),
-      totalTime: totalElapsed,
+      totalTime: completionElapsedSeconds ?? totalElapsed,
       secrets: collectedRewards.map((reward) => reward.emoji),
     };
 
@@ -1178,6 +1189,7 @@ export default function Home() {
     setRankingSaved(false);
     setShowRankingModal(false);
     setShowInstructions(false);
+    setCompletionElapsedSeconds(null);
 
     setDieCell(null);
     setHasDie(false);
@@ -2057,29 +2069,36 @@ export default function Home() {
         turtleRunActiveRef.current = false;
         turtleTriggeredRef.current = false;
         finishMainRunTimer();
+        freezeCompletionElapsed();
         setMainGameFinished(true);
       } else if (currentLevel === 4) {
         finishSecretRunTimer();
+        freezeCompletionElapsed();
         addReward("heart");
         setGameFinished(true);
       } else if (currentLevel === 5) {
         finishSecretRunTimer();
+        freezeCompletionElapsed();
         addReward("boss");
         setGameFinished(true);
       } else if (currentLevel === 6) {
         finishSecretRunTimer();
+        freezeCompletionElapsed();
         addReward("alien");
         setGameFinished(true);
       } else if (currentLevel === 7) {
         finishSecretRunTimer();
+        freezeCompletionElapsed();
         addReward("ace");
         setGameFinished(true);
       } else if (currentLevel === 8) {
         finishSecretRunTimer();
+        freezeCompletionElapsed();
         addReward("jackpot");
         setGameFinished(true);
       } else if (currentLevel === 9) {
         finishSecretRunTimer();
+        freezeCompletionElapsed();
         addReward("bandit");
         setGameFinished(true);
       }
@@ -2730,7 +2749,7 @@ export default function Home() {
                 {finalThemePhrase}
               </p>
               <p className="text-zinc-200 font-semibold text-sm sm:text-base">
-                vc chegou aqui em {formatTime(totalElapsed)}
+                vc chegou aqui em {formatTime(completionElapsedSeconds ?? totalElapsed)}
               </p>
               {hasReward("speed") && (
                 <p className="text-zinc-200 font-semibold text-sm sm:text-base">
@@ -2793,7 +2812,7 @@ export default function Home() {
 
               {found && level.isSecret && (
                 <p className="text-green-400 text-lg sm:text-xl font-semibold">
-                  Tempo final: {formatTime(secretRunFinishedSeconds ?? totalElapsed)}
+                  Tempo final: {formatTime(completionElapsedSeconds ?? totalElapsed)}
                 </p>
               )}
 
