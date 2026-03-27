@@ -807,6 +807,7 @@ export default function Home() {
   const [playerName, setPlayerName] = useState("");
   const [ranking, setRanking] = useState<RankingEntry[]>([]);
   const [rankingSaved, setRankingSaved] = useState(false);
+  const [rankingPositionMessage, setRankingPositionMessage] = useState("");
   const [showRankingModal, setShowRankingModal] = useState(false);
   const [showInstructions, setShowInstructions] = useState(false);
 
@@ -1147,10 +1148,14 @@ export default function Home() {
   async function handleSaveRanking() {
     if (!playerName.trim() || rankingSaved) return;
 
+    const trimmedName = playerName.trim().slice(0, 12);
+    const finalTime = completionElapsedSeconds ?? totalElapsed;
+    const finalSecrets = collectedRewards.map((reward) => reward.emoji);
+
     const newEntry = {
-      playerName: playerName.trim().slice(0, 12),
-      totalTime: completionElapsedSeconds ?? totalElapsed,
-      secrets: collectedRewards.map((reward) => reward.emoji),
+      playerName: trimmedName,
+      totalTime: finalTime,
+      secrets: finalSecrets,
     };
 
     try {
@@ -1167,19 +1172,38 @@ export default function Home() {
         return;
       }
 
-      setRankingSaved(true);
-      flashStatus("Ranking salvo.");
-
       const rankingRes = await fetch("/api/ranking", { cache: "no-store" });
 
-      if (!rankingRes.ok) return;
+      if (!rankingRes.ok) {
+        setRankingSaved(true);
+        flashStatus("Ranking salvo.");
+        setRankingPositionMessage("VOCÊ ENTROU NO RANKING");
+        return;
+      }
 
       const data = await rankingRes.json();
 
       if (Array.isArray(data)) {
-        const formatted = normalizeRankingEntries(data).slice(0, 15);
+        const formatted = normalizeRankingEntries(data);
         setRanking(formatted);
+
+        const position = formatted.findIndex((entry) =>
+          entry.name === trimmedName &&
+          entry.time === finalTime &&
+          entry.secrets.join(" ") === finalSecrets.join(" ")
+        );
+
+        if (position >= 0) {
+          setRankingPositionMessage(`VOCÊ É O #${position + 1} NO RANKING`);
+        } else {
+          setRankingPositionMessage("VOCÊ ENTROU NO RANKING");
+        }
+      } else {
+        setRankingPositionMessage("VOCÊ ENTROU NO RANKING");
       }
+
+      setRankingSaved(true);
+      flashStatus("Ranking salvo.");
     } catch {
       flashStatus("Erro ao salvar ranking.");
     }
@@ -1244,6 +1268,7 @@ export default function Home() {
 
     setPlayerName("");
     setRankingSaved(false);
+    setRankingPositionMessage("");
     setShowRankingModal(false);
     setShowInstructions(false);
     setCompletionElapsedSeconds(null);
@@ -2681,10 +2706,10 @@ export default function Home() {
                     </span>
 
                     <span className="flex items-center gap-2 text-right ml-auto">
-                      <span className="font-mono text-zinc-200">{formatTime(entry.time)}</span>
                       <span className="min-w-[64px] text-right truncate">
                         {entry.secrets.join(" ")}
                       </span>
+                      <span className="font-mono text-zinc-200">{formatTime(entry.time)}</span>
                     </span>
                   </div>
                 ))
@@ -2917,7 +2942,7 @@ export default function Home() {
                       : "bg-amber-400 hover:bg-amber-300 text-black"
                   }`}
                 >
-                  {rankingSaved ? "RANKING SALVO" : "SALVAR RANKING"}
+                  {rankingSaved ? (rankingPositionMessage || "RANKING SALVO") : "SALVAR RANKING"}
                 </button>
               </div>
             </>
