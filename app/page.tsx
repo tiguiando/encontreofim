@@ -801,6 +801,7 @@ export default function Home() {
     3: 0,
   });
   const [sixNineDone, setSixNineDone] = useState<number[]>([]);
+  const [passwordProgress, setPasswordProgress] = useState("");
 
   const [playerName, setPlayerName] = useState("");
   const [ranking, setRanking] = useState<RankingEntry[]>([]);
@@ -1103,6 +1104,15 @@ export default function Home() {
     }, ms);
   }
 
+  function appendPasswordValue(value: number | string) {
+    const nextValue = String(value);
+    setPasswordProgress((prev) => (prev ? `${prev} ${nextValue}` : nextValue));
+  }
+
+  function clearPasswordProgress() {
+    setPasswordProgress("");
+  }
+
   function addReward(id: RewardId) {
     setCollectedRewards((prev) => {
       if (prev.some((reward) => reward.id === id)) return prev;
@@ -1214,6 +1224,7 @@ export default function Home() {
 
     setSixNineProgress({ 1: 0, 2: 0, 3: 0 });
     setSixNineDone([]);
+    setPasswordProgress("");
 
     setTitleClicks(0);
     setTrollMode(false);
@@ -1969,6 +1980,7 @@ export default function Home() {
       setHeartSecretProgress(nextHeartSet);
 
       if (!heartSecretUnlocked) {
+        appendPasswordValue(level.cols * level.rows);
         flashSignal("CLICK");
       }
 
@@ -1989,6 +2001,7 @@ export default function Home() {
       setBossSecretProgress(nextBossSet);
 
       if (!bossSecretUnlocked) {
+        appendPasswordValue(6);
         flashSignal("CLICK");
       }
 
@@ -2007,9 +2020,11 @@ export default function Home() {
     if (!alienSecretUnlocked) {
       if (clickedAlienStepOne && alienSequenceStep === 0) {
         setAlienSequenceStep(1);
+        appendPasswordValue(5);
         flashSignal("CLICK");
       } else if (clickedAlienStepTwo && alienSequenceStep === 1) {
         setAlienSequenceStep(2);
+        appendPasswordValue(1);
         completeSecretUnlock(6, setAlienSecretUnlocked);
         unlockedSecretThisClick = true;
       }
@@ -2020,6 +2035,7 @@ export default function Home() {
       setAceSecretProgress(nextAceSet);
 
       if (!aceSecretUnlocked) {
+        appendPasswordValue(1);
         flashSignal("CLICK");
       }
 
@@ -2040,6 +2056,7 @@ export default function Home() {
       setJackpotSecretProgress(nextJackpotSet);
 
       if (!jackpotSecretUnlocked) {
+        appendPasswordValue(7);
         flashSignal("CLICK");
       }
 
@@ -2058,17 +2075,22 @@ export default function Home() {
     if (!banditSecretUnlocked) {
       if (clickedBanditStepOne && banditSecretStep === 0) {
         setBanditSecretStep(1);
+        appendPasswordValue(1);
         flashSignal("CLICK");
       } else if (clickedBanditStepTwo && banditSecretStep === 1) {
         setBanditSecretStep(2);
+        appendPasswordValue(7);
         flashSignal("CLICK");
       } else if (clickedBanditStepThree && banditSecretStep === 2) {
         setBanditSecretStep(3);
+        appendPasswordValue(1);
         flashSignal("CLICK");
         completeSecretUnlock(9, setBanditSecretUnlocked);
         unlockedSecretThisClick = true;
       } else if (clickedBanditStepOne || clickedBanditStepTwo) {
         setBanditSecretStep(clickedBanditStepOne ? 1 : 0);
+        clearPasswordProgress();
+        if (clickedBanditStepOne) appendPasswordValue(1);
       }
     }
 
@@ -2096,6 +2118,7 @@ export default function Home() {
         turtleTriggeredRef.current = false;
         finishMainRunTimer();
         freezeCompletionElapsed();
+        clearPasswordProgress();
         setMainGameFinished(true);
       } else if (currentLevel === 4) {
         finishSecretRunTimer();
@@ -3305,11 +3328,17 @@ export default function Home() {
         {shareMessage && <p className="text-xs sm:text-sm text-zinc-300">{shareMessage}</p>}
 
         <div className="w-full max-w-5xl flex items-end justify-between gap-3">
-          <div
-            className={`rounded-xl border border-zinc-700 bg-zinc-900/80 flex items-center justify-start gap-2 flex-wrap ${
-              isMobile ? "min-h-[34px] px-2 py-1 text-xl min-w-[64px]" : "min-h-[40px] min-w-[72px] px-3 py-2 text-2xl"
-            }`}
-          >
+          <div className="flex flex-col items-start gap-1 min-w-[72px]">
+            {passwordProgress && currentLevel <= 3 && !mainGameFinished && !finalCelebration && (
+              <p className="text-[10px] sm:text-xs text-zinc-500 tracking-[0.14em] uppercase">
+                password: <span className="text-zinc-400 normal-case tracking-normal">{passwordProgress}</span>
+              </p>
+            )}
+            <div
+              className={`rounded-xl border border-zinc-700 bg-zinc-900/80 flex items-center justify-start gap-2 flex-wrap ${
+                isMobile ? "min-h-[34px] px-2 py-1 text-xl min-w-[64px]" : "min-h-[40px] min-w-[72px] px-3 py-2 text-2xl"
+              }`}
+            >
             {hasKey && !giftUnlocked && <span title="Chave">🔑</span>}
 
             {hasDie && !dieUsed && (
@@ -3332,6 +3361,7 @@ export default function Home() {
                 {HINT_CARD_EMOJI[id]}
               </button>
             ))}
+            </div>
           </div>
 
           <div
