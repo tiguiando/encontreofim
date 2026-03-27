@@ -1112,19 +1112,12 @@ export default function Home() {
   function clearPasswordProgress() {
     setPasswordProgress("");
     setPasswordLevelProgress({});
-    setPasswordLevelProgress({});
   }
 
   function rememberPasswordForLevel(levelId: number, value: string) {
     setPasswordLevelProgress((prev) => {
       if (prev[levelId]) return prev;
-      const next = { ...prev, [levelId]: value };
-      const ordered = [1, 2, 3]
-        .filter((id) => next[id])
-        .map((id) => next[id])
-        .join(" ");
-      setPasswordProgress(ordered);
-      return next;
+      return { ...prev, [levelId]: value };
     });
   }
 
@@ -1268,6 +1261,14 @@ export default function Home() {
     lastInteractionRef.current = now;
     lastKnockRef.current = now;
   }
+
+  useEffect(() => {
+    const ordered = [1, 2, 3]
+      .filter((id) => passwordLevelProgress[id])
+      .map((id) => passwordLevelProgress[id])
+      .join(" ");
+    setPasswordProgress(ordered);
+  }, [passwordLevelProgress]);
 
   useEffect(() => {
     function updateViewport() {
