@@ -47,6 +47,7 @@ type RankingEntry = {
   name: string;
   time: number;
   secrets: string[];
+  createdAt?: string;
 };
 
 const SHARE_LINK = "https://encontreofim.vercel.app/";
@@ -688,6 +689,45 @@ function getFinalBoardEmoji(row: number, col: number, theme: FinalThemeId) {
   return themed[(row * 3 + col) % themed.length];
 }
 
+
+function getRankingDayKey(value?: string) {
+  if (!value) return "";
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+
+  const year = parsed.getFullYear();
+  const month = String(parsed.getMonth() + 1).padStart(2, "0");
+  const day = String(parsed.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function normalizeRankingEntries(items: any[]): RankingEntry[] {
+  const seen = new Set<string>();
+  const normalized: RankingEntry[] = [];
+
+  for (const item of items) {
+    const name = String(item?.player_name ?? item?.name ?? "").trim();
+    const time = Number(item?.total_time ?? item?.time ?? 0);
+    const secrets = Array.isArray(item?.secrets) ? item.secrets.map(String) : [];
+    const createdAt = item?.created_at ?? item?.createdAt ?? item?.date ?? undefined;
+    const dayKey = getRankingDayKey(createdAt);
+    const dedupeKey = `${name}|${time}|${secrets.join("")}|${dayKey}`;
+
+    if (!name || seen.has(dedupeKey)) continue;
+    seen.add(dedupeKey);
+
+    normalized.push({
+      name,
+      time,
+      secrets,
+      createdAt,
+    });
+  }
+
+  return normalized;
+}
+
 export default function Home() {
   const [boardSeed, setBoardSeed] = useState(0);
 
@@ -859,7 +899,7 @@ export default function Home() {
     setCompletionElapsedSeconds(totalElapsed);
   }
 
-  const displayRanking = useMemo(() => ranking.slice(0, 10), [ranking]);
+  const displayRanking = useMemo(() => ranking.slice(0, 15), [ranking]);
 
   const finalTheme = useMemo(() => getFinalThemeReward(collectedRewards), [collectedRewards]);
   const finalThemePhrase = useMemo(() => getFinalThemePhrase(finalTheme), [finalTheme]);
@@ -1114,14 +1154,7 @@ export default function Home() {
       const data = await rankingRes.json();
 
       if (Array.isArray(data)) {
-        const formatted: RankingEntry[] = data
-          .map((r: any) => ({
-            name: r.player_name,
-            time: r.total_time,
-            secrets: Array.isArray(r.secrets) ? r.secrets : [],
-          }))
-          .slice(0, 10);
-
+        const formatted = normalizeRankingEntries(data).slice(0, 15);
         setRanking(formatted);
       }
     } catch {
@@ -1237,14 +1270,7 @@ export default function Home() {
         const data = await res.json();
 
         if (Array.isArray(data)) {
-          const formatted: RankingEntry[] = data
-            .map((r: any) => ({
-              name: r.player_name,
-              time: r.total_time,
-              secrets: Array.isArray(r.secrets) ? r.secrets : [],
-            }))
-            .slice(0, 10);
-
+          const formatted = normalizeRankingEntries(data).slice(0, 15);
           setRanking(formatted);
         } else {
           setRanking([]);
