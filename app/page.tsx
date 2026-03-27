@@ -91,7 +91,7 @@ const HINT_TEXTS: Record<HintEnvelopeId, string> = {
   alien: "Você acredita em aliens? Eu ja vi um na área 51 entre o primeiro e segundo vilarejo",
   boss: "O mal tem um número próprio dividido pelo mundo",
   ace: "Esse jogo é AAA, pra mim sempre será o número 1!",
-  jackpot: "Eu sempre jogo meu número da sorte onde eu passo para acertar o jackpot",
+  jackpot: "Eu sempre jogo meu número da sorte para acertar o jackpot",
   bandit: "cuidado tem golpista (171) escondido e todas as regiões",
   memory:
     "Sou esquecido, eu gosto de repetir o nome do jogo várias vezes para entrar na cabeça",
@@ -728,6 +728,46 @@ function normalizeRankingEntries(items: any[]): RankingEntry[] {
   return normalized;
 }
 
+
+const BANNED_WORDS = [
+  "fuck",
+  "shit",
+  "bitch",
+  "asshole",
+  "porra",
+  "caralho",
+  "merda",
+  "puta",
+  "foda",
+  "fukc",
+  "buceta",
+  "bct",
+];
+
+function normalizeBlockedText(text: string) {
+  return text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z]/g, "");
+}
+
+function containsBlockedWord(text: string) {
+  const normalized = normalizeBlockedText(text);
+  return BANNED_WORDS.some((word) => normalized.includes(word));
+}
+
+function maskBlockedWords(text: string) {
+  let masked = text;
+
+  for (const word of BANNED_WORDS) {
+    const pattern = new RegExp(word.split("").join("[^a-zA-Z]*"), "gi");
+    masked = masked.replace(pattern, (match) => "*".repeat(match.length));
+  }
+
+  return masked;
+}
+
 export default function Home() {
   const [boardSeed, setBoardSeed] = useState(0);
 
@@ -1167,12 +1207,24 @@ export default function Home() {
   }
 
   async function handleSaveRanking() {
-    if (!playerName.trim() || rankingSaved) return;
+    const trimmedName = playerName.trim().slice(0, 12);
+
+    if (!trimmedName || rankingSaved) return;
+
+    const maskedName = maskBlockedWords(trimmedName);
+    if (containsBlockedWord(trimmedName) || maskedName !== trimmedName) {
+      setPlayerName(maskedName);
+      flashStatus("Nome inválido 🚫");
+      return;
+    }
+
+    const finalTime = completionElapsedSeconds ?? totalElapsed;
+    const finalSecrets = collectedRewards.map((reward) => reward.emoji);
 
     const newEntry = {
-      playerName: playerName.trim().slice(0, 12),
-      totalTime: completionElapsedSeconds ?? totalElapsed,
-      secrets: collectedRewards.map((reward) => reward.emoji),
+      playerName: trimmedName,
+      totalTime: finalTime,
+      secrets: finalSecrets,
     };
 
     try {
@@ -1184,24 +1236,34 @@ export default function Home() {
         body: JSON.stringify(newEntry),
       });
 
+      const payload = await res.json().catch(() => null);
+
       if (!res.ok) {
-        flashStatus("Erro ao salvar ranking.");
+        const errorMessage =
+          typeof payload?.error === "string" ? payload.error : "Erro ao salvar ranking";
+        flashStatus(errorMessage);
+        if (errorMessage.toLowerCase().includes("nome inválido")) {
+          setPlayerName(maskBlockedWords(trimmedName));
+        }
         return;
+      }
+
+      const formatted = await refreshRanking();
+
+      const position = formatted.findIndex((entry) =>
+        entry.name === trimmedName &&
+        entry.time === finalTime &&
+        entry.secrets.join(" ") === finalSecrets.join(" ")
+      );
+
+      if (position >= 0) {
+        setRankingPositionMessage(`VOCÊ É O #${position + 1} NO RANKING`);
+      } else {
+        setRankingPositionMessage("VOCÊ ENTROU NO RANKING");
       }
 
       setRankingSaved(true);
       flashStatus("Ranking salvo.");
-
-      const rankingRes = await fetch("/api/ranking", { cache: "no-store" });
-
-      if (!rankingRes.ok) return;
-
-      const data = await rankingRes.json();
-
-      if (Array.isArray(data)) {
-        const formatted = normalizeRankingEntries(data).slice(0, 15);
-        setRanking(formatted);
-      }
     } catch {
       flashStatus("Erro ao salvar ranking.");
     }
@@ -2686,10 +2748,10 @@ export default function Home() {
                     </span>
 
                     <span className="flex items-center gap-2 text-right ml-auto">
-                      <span className="font-mono text-zinc-200">{formatTime(entry.time)}</span>
                       <span className="min-w-[64px] text-right truncate">
                         {entry.secrets.join(" ")}
                       </span>
+                      <span className="font-mono text-zinc-200">{formatTime(entry.time)}</span>
                     </span>
                   </div>
                 ))
@@ -2907,7 +2969,15 @@ export default function Home() {
               <div className="flex flex-col items-center gap-2 mt-4">
                 <input
                   value={playerName}
-                  onChange={(e) => setPlayerName(e.target.value)}
+                  onChange={(e) => {
+                    const nextValue = e.target.value.slice(0, 12);
+                    const maskedValue = maskBlockedWords(nextValue);
+                    setPlayerName(maskedValue);
+
+                    if (containsBlockedWord(nextValue) || maskedValue !== nextValue) {
+                      flashStatus("Nome inválido 🚫");
+                    }
+                  }}
                   placeholder="Seu nome"
                   maxLength={12}
                   className="px-3 py-2 rounded bg-zinc-800 border border-zinc-600 text-white text-center outline-none focus:border-amber-400 text-sm sm:text-base"
@@ -2922,7 +2992,7 @@ export default function Home() {
                       : "bg-amber-400 hover:bg-amber-300 text-black"
                   }`}
                 >
-                  {rankingSaved ? "RANKING SALVO" : "SALVAR RANKING"}
+                  {rankingSaved ? (rankingPositionMessage || "RANKING SALVO") : "SALVAR RANKING"}
                 </button>
               </div>
             </>
