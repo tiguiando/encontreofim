@@ -807,7 +807,6 @@ export default function Home() {
   const [playerName, setPlayerName] = useState("");
   const [ranking, setRanking] = useState<RankingEntry[]>([]);
   const [rankingSaved, setRankingSaved] = useState(false);
-  const [rankingPositionMessage, setRankingPositionMessage] = useState("");
   const [showRankingModal, setShowRankingModal] = useState(false);
   const [showInstructions, setShowInstructions] = useState(false);
 
@@ -1145,17 +1144,35 @@ export default function Home() {
     });
   }
 
+  async function refreshRanking() {
+    try {
+      const res = await fetch("/api/ranking", { cache: "no-store" });
+
+      if (!res.ok) {
+        setRanking([]);
+        return;
+      }
+
+      const data = await res.json();
+
+      if (Array.isArray(data)) {
+        const formatted = normalizeRankingEntries(data);
+        setRanking(formatted);
+      } else {
+        setRanking([]);
+      }
+    } catch {
+      setRanking([]);
+    }
+  }
+
   async function handleSaveRanking() {
     if (!playerName.trim() || rankingSaved) return;
 
-    const trimmedName = playerName.trim().slice(0, 12);
-    const finalTime = completionElapsedSeconds ?? totalElapsed;
-    const finalSecrets = collectedRewards.map((reward) => reward.emoji);
-
     const newEntry = {
-      playerName: trimmedName,
-      totalTime: finalTime,
-      secrets: finalSecrets,
+      playerName: playerName.trim().slice(0, 12),
+      totalTime: completionElapsedSeconds ?? totalElapsed,
+      secrets: collectedRewards.map((reward) => reward.emoji),
     };
 
     try {
@@ -1172,38 +1189,19 @@ export default function Home() {
         return;
       }
 
+      setRankingSaved(true);
+      flashStatus("Ranking salvo.");
+
       const rankingRes = await fetch("/api/ranking", { cache: "no-store" });
 
-      if (!rankingRes.ok) {
-        setRankingSaved(true);
-        flashStatus("Ranking salvo.");
-        setRankingPositionMessage("VOCÊ ENTROU NO RANKING");
-        return;
-      }
+      if (!rankingRes.ok) return;
 
       const data = await rankingRes.json();
 
       if (Array.isArray(data)) {
-        const formatted = normalizeRankingEntries(data);
+        const formatted = normalizeRankingEntries(data).slice(0, 15);
         setRanking(formatted);
-
-        const position = formatted.findIndex((entry) =>
-          entry.name === trimmedName &&
-          entry.time === finalTime &&
-          entry.secrets.join(" ") === finalSecrets.join(" ")
-        );
-
-        if (position >= 0) {
-          setRankingPositionMessage(`VOCÊ É O #${position + 1} NO RANKING`);
-        } else {
-          setRankingPositionMessage("VOCÊ ENTROU NO RANKING");
-        }
-      } else {
-        setRankingPositionMessage("VOCÊ ENTROU NO RANKING");
       }
-
-      setRankingSaved(true);
-      flashStatus("Ranking salvo.");
     } catch {
       flashStatus("Erro ao salvar ranking.");
     }
@@ -1268,7 +1266,6 @@ export default function Home() {
 
     setPlayerName("");
     setRankingSaved(false);
-    setRankingPositionMessage("");
     setShowRankingModal(false);
     setShowInstructions(false);
     setCompletionElapsedSeconds(null);
@@ -1322,29 +1319,7 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    async function loadRanking() {
-      try {
-        const res = await fetch("/api/ranking", { cache: "no-store" });
-
-        if (!res.ok) {
-          setRanking([]);
-          return;
-        }
-
-        const data = await res.json();
-
-        if (Array.isArray(data)) {
-          const formatted = normalizeRankingEntries(data);
-          setRanking(formatted);
-        } else {
-          setRanking([]);
-        }
-      } catch {
-        setRanking([]);
-      }
-    }
-
-    loadRanking();
+    refreshRanking();
   }, []);
 
   useEffect(() => {
@@ -1700,6 +1675,11 @@ export default function Home() {
       if (statusTimeoutRef.current) window.clearTimeout(statusTimeoutRef.current);
     };
   }, []);
+
+  async function openRankingModal() {
+    await refreshRanking();
+    setShowRankingModal(true);
+  }
 
   function handleTitleClick() {
     if (finalCelebration) return;
@@ -2706,10 +2686,10 @@ export default function Home() {
                     </span>
 
                     <span className="flex items-center gap-2 text-right ml-auto">
+                      <span className="font-mono text-zinc-200">{formatTime(entry.time)}</span>
                       <span className="min-w-[64px] text-right truncate">
                         {entry.secrets.join(" ")}
                       </span>
-                      <span className="font-mono text-zinc-200">{formatTime(entry.time)}</span>
                     </span>
                   </div>
                 ))
@@ -2942,7 +2922,7 @@ export default function Home() {
                       : "bg-amber-400 hover:bg-amber-300 text-black"
                   }`}
                 >
-                  {rankingSaved ? (rankingPositionMessage || "RANKING SALVO") : "SALVAR RANKING"}
+                  {rankingSaved ? "RANKING SALVO" : "SALVAR RANKING"}
                 </button>
               </div>
             </>
@@ -3465,7 +3445,7 @@ export default function Home() {
           </div>
 
           <button
-            onClick={() => setShowRankingModal(true)}
+            onClick={openRankingModal}
             className={`rounded-full border border-zinc-700 bg-zinc-900/90 hover:bg-zinc-800 text-white flex items-center justify-center transition shadow-lg ${
               isMobile ? "w-11 h-11 text-lg" : "w-12 h-12 text-xl"
             }`}
