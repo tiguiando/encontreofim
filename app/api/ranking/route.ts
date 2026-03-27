@@ -46,7 +46,9 @@ export async function POST(req: Request) {
 export async function GET() {
   const { data, error } = await supabase
     .from("ranking")
-    .select("player_name, total_time, secrets");
+    .select("player_name, total_time, secrets, created_at")
+    .order("created_at", { ascending: false })
+    .limit(300);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -62,8 +64,7 @@ export async function GET() {
       if (secretsDiff !== 0) return secretsDiff;
 
       return a.total_time - b.total_time;
-    })
-    .slice(0, 10);
+    });
 
   return NextResponse.json(sorted);
 }
