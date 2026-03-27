@@ -1112,6 +1112,20 @@ export default function Home() {
   function clearPasswordProgress() {
     setPasswordProgress("");
     setPasswordLevelProgress({});
+    setPasswordLevelProgress({});
+  }
+
+  function rememberPasswordForLevel(levelId: number, value: string) {
+    setPasswordLevelProgress((prev) => {
+      if (prev[levelId]) return prev;
+      const next = { ...prev, [levelId]: value };
+      const ordered = [1, 2, 3]
+        .filter((id) => next[id])
+        .map((id) => next[id])
+        .join(" ");
+      setPasswordProgress(ordered);
+      return next;
+    });
   }
 
   function addReward(id: RewardId) {
