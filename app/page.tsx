@@ -1682,7 +1682,7 @@ export default function Home() {
     const isSeven = cell.col === 6 && cell.row === 0;
 
     if (levelId === 1 && isOne) {
-      setPasswordProgress("");
+      setPasswordProgress("1");
       return;
     }
 
