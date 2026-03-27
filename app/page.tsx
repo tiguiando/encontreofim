@@ -802,6 +802,7 @@ export default function Home() {
   });
   const [sixNineDone, setSixNineDone] = useState<number[]>([]);
   const [passwordProgress, setPasswordProgress] = useState("");
+  const [passwordLevelProgress, setPasswordLevelProgress] = useState<Record<number, string>>({});
 
   const [playerName, setPlayerName] = useState("");
   const [ranking, setRanking] = useState<RankingEntry[]>([]);
@@ -1110,6 +1111,7 @@ export default function Home() {
 
   function clearPasswordProgress() {
     setPasswordProgress("");
+    setPasswordLevelProgress({});
   }
 
   function addReward(id: RewardId) {
@@ -1982,12 +1984,7 @@ export default function Home() {
       setHeartSecretProgress(nextHeartSet);
 
       if (!heartSecretUnlocked) {
-        setPasswordPreview(
-          nextHeartSet
-            .sort((a, b) => a - b)
-            .map(() => "0")
-            .join(" ")
-        );
+        rememberPasswordForLevel(currentLevel, "0");
         flashSignal("CLICK");
       }
 
@@ -2008,7 +2005,7 @@ export default function Home() {
       setBossSecretProgress(nextBossSet);
 
       if (!bossSecretUnlocked) {
-        setPasswordPreview(nextBossSet.sort((a, b) => a - b).map(() => "6").join(" "));
+        rememberPasswordForLevel(currentLevel, "6");
         flashSignal("CLICK");
       }
 
@@ -2027,11 +2024,11 @@ export default function Home() {
     if (!alienSecretUnlocked) {
       if (clickedAlienStepOne && alienSequenceStep === 0) {
         setAlienSequenceStep(1);
-        setPasswordPreview("5");
+        rememberPasswordForLevel(1, "5");
         flashSignal("CLICK");
       } else if (clickedAlienStepTwo && alienSequenceStep === 1) {
         setAlienSequenceStep(2);
-        setPasswordPreview("5 1");
+        rememberPasswordForLevel(2, "1");
         completeSecretUnlock(6, setAlienSecretUnlocked);
         unlockedSecretThisClick = true;
       }
@@ -2042,17 +2039,7 @@ export default function Home() {
       setAceSecretProgress(nextAceSet);
 
       if (!aceSecretUnlocked) {
-        const hasLevel1 = nextAceSet.includes(1)
-        const hasLevel2 = nextAceSet.includes(2)
-        const hasLevel3 = nextAceSet.includes(3)
-
-        if (hasLevel1 && !hasLevel2 && !hasLevel3) {
-          setPasswordPreview("1");
-        } else if (hasLevel1 && hasLevel2 && !hasLevel3) {
-          setPasswordPreview("1 1");
-        } else if (hasLevel1 && hasLevel2 && hasLevel3) {
-          setPasswordPreview("1 1 1");
-        }
+        rememberPasswordForLevel(currentLevel, "1");
         flashSignal("CLICK");
       }
 
@@ -2073,7 +2060,7 @@ export default function Home() {
       setJackpotSecretProgress(nextJackpotSet);
 
       if (!jackpotSecretUnlocked) {
-        setPasswordPreview(nextJackpotSet.sort((a, b) => a - b).map(() => "7").join(" "));
+        rememberPasswordForLevel(currentLevel, "7");
         flashSignal("CLICK");
       }
 
@@ -2092,25 +2079,20 @@ export default function Home() {
     if (!banditSecretUnlocked) {
       if (clickedBanditStepOne && banditSecretStep === 0) {
         setBanditSecretStep(1);
-        setPasswordPreview("1");
+        rememberPasswordForLevel(1, "1");
         flashSignal("CLICK");
       } else if (clickedBanditStepTwo && banditSecretStep === 1) {
         setBanditSecretStep(2);
-        setPasswordPreview("1 7");
+        rememberPasswordForLevel(2, "7");
         flashSignal("CLICK");
       } else if (clickedBanditStepThree && banditSecretStep === 2) {
         setBanditSecretStep(3);
-        setPasswordPreview("1 7 1");
+        rememberPasswordForLevel(3, "1");
         flashSignal("CLICK");
         completeSecretUnlock(9, setBanditSecretUnlocked);
         unlockedSecretThisClick = true;
       } else if (clickedBanditStepOne || clickedBanditStepTwo) {
         setBanditSecretStep(clickedBanditStepOne ? 1 : 0);
-        if (clickedBanditStepOne) {
-          setPasswordPreview("1");
-        } else {
-          clearPasswordProgress();
-        }
       }
     }
 
