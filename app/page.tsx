@@ -1075,7 +1075,7 @@ export default function Home() {
 
     const newEntry = {
       playerName: playerName.trim().slice(0, 12),
-      totalTime: mainRunFinishedSeconds ?? totalElapsed,
+      totalTime: totalElapsed,
       secrets: collectedRewards.map((reward) => reward.emoji),
     };
 
