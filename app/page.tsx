@@ -1238,6 +1238,7 @@ export default function Home() {
     setDieCell(null);
     setHasDie(false);
     setDieUsed(false);
+    setPasswordProgress("");
 
     resetRabbitRunSequence();
     resetTrollRunSequence();
@@ -1675,6 +1676,39 @@ export default function Home() {
     flashStatus(HINT_TEXTS[id]);
   }
 
+
+  function updatePasswordPreview(levelId: number, cell: Cell) {
+    const isOne = cell.col === 0 && cell.row === 0;
+    const isSeven = cell.col === 6 && cell.row === 0;
+
+    if (levelId === 1 && isOne) {
+      setPasswordProgress("");
+      return;
+    }
+
+    if (levelId === 2) {
+      if (isOne) {
+        setPasswordProgress("1 1");
+        return;
+      }
+      if (isSeven) {
+        setPasswordProgress("1 7");
+        return;
+      }
+    }
+
+    if (levelId === 3) {
+      if (isOne && banditSecretStep === 2) {
+        setPasswordProgress("1 7 1");
+        return;
+      }
+      if (isOne && aceSecretProgress.includes(1) && aceSecretProgress.includes(2)) {
+        setPasswordProgress("1 1 1");
+        return;
+      }
+    }
+  }
+
   function maybeHandleSixNine(levelId: number, cell: Cell) {
     if (levelId < 1 || levelId > 3) return false;
     if (sixNineDone.includes(levelId)) return false;
@@ -1975,6 +2009,8 @@ export default function Home() {
 
     let unlockedSecretThisClick = false;
 
+    updatePasswordPreview(currentLevel, cell);
+
     if (clickedHeartSecretTrigger && !heartSecretProgress.includes(currentLevel)) {
       const nextHeartSet = [...heartSecretProgress, currentLevel];
       setHeartSecretProgress(nextHeartSet);
@@ -2119,36 +2155,43 @@ export default function Home() {
         finishMainRunTimer();
         freezeCompletionElapsed();
         clearPasswordProgress();
+        setPasswordProgress("");
         setMainGameFinished(true);
       } else if (currentLevel === 4) {
         finishSecretRunTimer();
         freezeCompletionElapsed();
         addReward("heart");
+        setPasswordProgress("");
         setGameFinished(true);
       } else if (currentLevel === 5) {
         finishSecretRunTimer();
         freezeCompletionElapsed();
         addReward("boss");
+        setPasswordProgress("");
         setGameFinished(true);
       } else if (currentLevel === 6) {
         finishSecretRunTimer();
         freezeCompletionElapsed();
         addReward("alien");
+        setPasswordProgress("");
         setGameFinished(true);
       } else if (currentLevel === 7) {
         finishSecretRunTimer();
         freezeCompletionElapsed();
         addReward("ace");
+        setPasswordProgress("");
         setGameFinished(true);
       } else if (currentLevel === 8) {
         finishSecretRunTimer();
         freezeCompletionElapsed();
         addReward("jackpot");
+        setPasswordProgress("");
         setGameFinished(true);
       } else if (currentLevel === 9) {
         finishSecretRunTimer();
         freezeCompletionElapsed();
         addReward("bandit");
+        setPasswordProgress("");
         setGameFinished(true);
       }
     } else {
