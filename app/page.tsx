@@ -91,7 +91,7 @@ const HINT_TEXTS: Record<HintEnvelopeId, string> = {
   alien: "Você acredita em aliens? Eu ja vi um na área 51 entre o primeiro e segundo vilarejo",
   boss: "O mal tem um número próprio dividido pelo mundo",
   ace: "Esse jogo é AAA, pra mim sempre será o número 1!",
-  jackpot: "Eu sempre jogo meu número da sorte para acertar o jackpot",
+  jackpot: "Eu sempre jogo meu número da sorte onde eu passo para acertar o jackpot",
   bandit: "cuidado tem golpista (171) escondido e todas as regiões",
   memory:
     "Sou esquecido, eu gosto de repetir o nome do jogo várias vezes para entrar na cabeça",
