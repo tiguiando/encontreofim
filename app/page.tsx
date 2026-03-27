@@ -899,7 +899,7 @@ export default function Home() {
     setCompletionElapsedSeconds(totalElapsed);
   }
 
-  const displayRanking = useMemo(() => ranking.slice(0, 15), [ranking]);
+  const displayRanking = useMemo(() => ranking.slice(0, 100), [ranking]);
 
   const finalTheme = useMemo(() => getFinalThemeReward(collectedRewards), [collectedRewards]);
   const finalThemePhrase = useMemo(() => getFinalThemePhrase(finalTheme), [finalTheme]);
