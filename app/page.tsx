@@ -1116,7 +1116,12 @@ export default function Home() {
 
   function rememberPasswordForLevel(levelId: number, value: string) {
     setPasswordLevelProgress((prev) => {
+      const alienPasswordClosed =
+        alienSecretUnlocked && prev[1] === "5" && prev[2] === "1";
+
+      if (alienPasswordClosed && levelId === 3) return prev;
       if (prev[levelId]) return prev;
+
       return { ...prev, [levelId]: value };
     });
   }
@@ -1263,12 +1268,18 @@ export default function Home() {
   }
 
   useEffect(() => {
-    const ordered = [1, 2, 3]
+    const orderedLevels =
+      alienSecretUnlocked && passwordLevelProgress[1] === "5" && passwordLevelProgress[2] === "1"
+        ? [1, 2]
+        : [1, 2, 3];
+
+    const ordered = orderedLevels
       .filter((id) => passwordLevelProgress[id])
       .map((id) => passwordLevelProgress[id])
       .join(" ");
+
     setPasswordProgress(ordered);
-  }, [passwordLevelProgress]);
+  }, [passwordLevelProgress, alienSecretUnlocked]);
 
   useEffect(() => {
     function updateViewport() {
