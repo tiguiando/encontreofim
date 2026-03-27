@@ -899,7 +899,7 @@ export default function Home() {
     setCompletionElapsedSeconds(totalElapsed);
   }
 
-  const displayRanking = useMemo(() => ranking.slice(0, 100), [ranking]);
+  const displayRanking = useMemo(() => ranking.slice(0, 150), [ranking]);
 
   const finalTheme = useMemo(() => getFinalThemeReward(collectedRewards), [collectedRewards]);
   const finalThemePhrase = useMemo(() => getFinalThemePhrase(finalTheme), [finalTheme]);
@@ -1270,7 +1270,7 @@ export default function Home() {
         const data = await res.json();
 
         if (Array.isArray(data)) {
-          const formatted = normalizeRankingEntries(data).slice(0, 15);
+          const formatted = normalizeRankingEntries(data);
           setRanking(formatted);
         } else {
           setRanking([]);
