@@ -1104,9 +1104,8 @@ export default function Home() {
     }, ms);
   }
 
-  function appendPasswordValue(value: number | string) {
-    const nextValue = String(value);
-    setPasswordProgress((prev) => (prev ? `${prev} ${nextValue}` : nextValue));
+  function setPasswordPreview(value: string) {
+    setPasswordProgress(value);
   }
 
   function clearPasswordProgress() {
@@ -1677,38 +1676,6 @@ export default function Home() {
   }
 
 
-  function updatePasswordPreview(levelId: number, cell: Cell) {
-    const isOne = cell.col === 0 && cell.row === 0;
-    const isSeven = cell.col === 6 && cell.row === 0;
-
-    if (levelId === 1 && isOne) {
-      setPasswordProgress("1");
-      return;
-    }
-
-    if (levelId === 2) {
-      if (isOne) {
-        setPasswordProgress("1 1");
-        return;
-      }
-      if (isSeven) {
-        setPasswordProgress("1 7");
-        return;
-      }
-    }
-
-    if (levelId === 3) {
-      if (isOne && banditSecretStep === 2) {
-        setPasswordProgress("1 7 1");
-        return;
-      }
-      if (isOne && aceSecretProgress.includes(1) && aceSecretProgress.includes(2)) {
-        setPasswordProgress("1 1 1");
-        return;
-      }
-    }
-  }
-
   function maybeHandleSixNine(levelId: number, cell: Cell) {
     if (levelId < 1 || levelId > 3) return false;
     if (sixNineDone.includes(levelId)) return false;
@@ -2009,14 +1976,22 @@ export default function Home() {
 
     let unlockedSecretThisClick = false;
 
-    updatePasswordPreview(currentLevel, cell);
 
     if (clickedHeartSecretTrigger && !heartSecretProgress.includes(currentLevel)) {
       const nextHeartSet = [...heartSecretProgress, currentLevel];
       setHeartSecretProgress(nextHeartSet);
 
       if (!heartSecretUnlocked) {
-        appendPasswordValue(level.cols * level.rows);
+        setPasswordPreview(
+          nextHeartSet
+            .sort((a, b) => a - b)
+            .map((levelId) => {
+              if (levelId === 1) return String(LEVELS[0].cols * LEVELS[0].rows);
+              if (levelId === 2) return String(LEVELS[1].cols * LEVELS[1].rows);
+              return String(LEVELS[2].cols * LEVELS[2].rows);
+            })
+            .join(" ")
+        );
         flashSignal("CLICK");
       }
 
@@ -2037,7 +2012,7 @@ export default function Home() {
       setBossSecretProgress(nextBossSet);
 
       if (!bossSecretUnlocked) {
-        appendPasswordValue(6);
+        setPasswordPreview(nextBossSet.sort((a, b) => a - b).map(() => "6").join(" "));
         flashSignal("CLICK");
       }
 
@@ -2056,11 +2031,11 @@ export default function Home() {
     if (!alienSecretUnlocked) {
       if (clickedAlienStepOne && alienSequenceStep === 0) {
         setAlienSequenceStep(1);
-        appendPasswordValue(5);
+        setPasswordPreview("5");
         flashSignal("CLICK");
       } else if (clickedAlienStepTwo && alienSequenceStep === 1) {
         setAlienSequenceStep(2);
-        appendPasswordValue(1);
+        setPasswordPreview("5 1");
         completeSecretUnlock(6, setAlienSecretUnlocked);
         unlockedSecretThisClick = true;
       }
@@ -2071,7 +2046,17 @@ export default function Home() {
       setAceSecretProgress(nextAceSet);
 
       if (!aceSecretUnlocked) {
-        appendPasswordValue(1);
+        const hasLevel1 = nextAceSet.includes(1)
+        const hasLevel2 = nextAceSet.includes(2)
+        const hasLevel3 = nextAceSet.includes(3)
+
+        if (hasLevel1 && !hasLevel2 && !hasLevel3) {
+          setPasswordPreview("1");
+        } else if (hasLevel1 && hasLevel2 && !hasLevel3) {
+          setPasswordPreview("1 1");
+        } else if (hasLevel1 && hasLevel2 && hasLevel3) {
+          setPasswordPreview("1 1 1");
+        }
         flashSignal("CLICK");
       }
 
@@ -2092,7 +2077,7 @@ export default function Home() {
       setJackpotSecretProgress(nextJackpotSet);
 
       if (!jackpotSecretUnlocked) {
-        appendPasswordValue(7);
+        setPasswordPreview(nextJackpotSet.sort((a, b) => a - b).map(() => "7").join(" "));
         flashSignal("CLICK");
       }
 
@@ -2111,22 +2096,25 @@ export default function Home() {
     if (!banditSecretUnlocked) {
       if (clickedBanditStepOne && banditSecretStep === 0) {
         setBanditSecretStep(1);
-        appendPasswordValue(1);
+        setPasswordPreview("1");
         flashSignal("CLICK");
       } else if (clickedBanditStepTwo && banditSecretStep === 1) {
         setBanditSecretStep(2);
-        appendPasswordValue(7);
+        setPasswordPreview("1 7");
         flashSignal("CLICK");
       } else if (clickedBanditStepThree && banditSecretStep === 2) {
         setBanditSecretStep(3);
-        appendPasswordValue(1);
+        setPasswordPreview("1 7 1");
         flashSignal("CLICK");
         completeSecretUnlock(9, setBanditSecretUnlocked);
         unlockedSecretThisClick = true;
       } else if (clickedBanditStepOne || clickedBanditStepTwo) {
         setBanditSecretStep(clickedBanditStepOne ? 1 : 0);
-        clearPasswordProgress();
-        if (clickedBanditStepOne) appendPasswordValue(1);
+        if (clickedBanditStepOne) {
+          setPasswordPreview("1");
+        } else {
+          clearPasswordProgress();
+        }
       }
     }
 
@@ -2155,7 +2143,6 @@ export default function Home() {
         finishMainRunTimer();
         freezeCompletionElapsed();
         clearPasswordProgress();
-        setPasswordProgress("");
         setMainGameFinished(true);
       } else if (currentLevel === 4) {
         finishSecretRunTimer();
