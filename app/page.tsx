@@ -2088,6 +2088,7 @@ export default function Home() {
         setHasDie(true);
         setDieCell(null);
         setClickedCells((prev) => [...prev, key]);
+        setHint(getDirection(cell, treasure, level.cols, level.rows, trollMode));
 
         const distance = Math.abs(cell.col - treasure.col) + Math.abs(cell.row - treasure.row);
         const nextClicks = clicks + 1;
@@ -2113,6 +2114,7 @@ export default function Home() {
         setRevealedKeyCell(clickedKey);
         setLevelOneKeyCells([]);
         setClickedCells((prev) => [...prev, key]);
+        setHint(getDirection(cell, treasure, level.cols, level.rows, trollMode));
 
         const distance = Math.abs(cell.col - treasure.col) + Math.abs(cell.row - treasure.row);
         const nextClicks = clicks + 1;
