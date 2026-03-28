@@ -858,6 +858,9 @@ export default function Home() {
   const [viewportWidth, setViewportWidth] = useState(1200);
   const [viewportHeight, setViewportHeight] = useState(900);
   const [isMobile, setIsMobile] = useState(false);
+  const [showIntro, setShowIntro] = useState(true);
+  const [introText, setIntroText] = useState("");
+  const [introFading, setIntroFading] = useState(false);
 
   const sessionStartRef = useRef<number | null>(null);
   const mainRunStartRef = useRef<number | null>(null);
@@ -1383,6 +1386,37 @@ export default function Home() {
     window.addEventListener("resize", updateViewport);
 
     return () => window.removeEventListener("resize", updateViewport);
+  }, []);
+
+
+  useEffect(() => {
+    const fullText = "SEASON 1: THE VOID";
+    let index = 0;
+
+    const typingInterval = window.setInterval(() => {
+      index += 1;
+      setIntroText(fullText.slice(0, index));
+
+      if (index >= fullText.length) {
+        window.clearInterval(typingInterval);
+
+        const holdTimeout = window.setTimeout(() => {
+          setIntroFading(true);
+
+          const endTimeout = window.setTimeout(() => {
+            setShowIntro(false);
+          }, 700);
+
+          return () => window.clearTimeout(endTimeout);
+        }, 900);
+
+        return () => window.clearTimeout(holdTimeout);
+      }
+    }, 90);
+
+    return () => {
+      window.clearInterval(typingInterval);
+    };
   }, []);
 
   useEffect(() => {
@@ -2638,6 +2672,21 @@ export default function Home() {
         }
       `}</style>
 
+      {showIntro && (
+        <div
+          className={`fixed inset-0 z-[120] bg-black flex items-center justify-center transition-opacity duration-700 ${
+            introFading ? "opacity-0" : "opacity-100"
+          }`}
+        >
+          <div className="px-6 text-center">
+            <p className="text-zinc-300 text-sm sm:text-lg md:text-xl tracking-[0.35em] uppercase font-semibold">
+              {introText}
+            </p>
+          </div>
+        </div>
+      )}
+
+
       {level.secretType === "boss" && !finalCelebration && (
         <>
           <div className="absolute inset-0 bg-gradient-to-b from-red-950/10 via-red-900/10 to-black pointer-events-none" />
@@ -3537,9 +3586,7 @@ export default function Home() {
           </button>
         </div>
       )}
-      <div className="text-xs text-zinc-400 tracking-[0.2em] uppercase opacity-80">
-          SEASON 1 — THE VOID
-      </div>
+
       <div className="fixed bottom-2 left-1/2 -translate-x-1/2 z-40 flex items-center gap-4">
         <a
           href={HELP_DEV_LINK}
