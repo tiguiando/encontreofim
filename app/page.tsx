@@ -2346,7 +2346,7 @@ export default function Home() {
     try {
       if (navigator.share) {
         await navigator.share({
-          title: "Encontre o FIM",
+          title: "Encontre o Fim",
           text,
         });
       } else {
@@ -2407,7 +2407,7 @@ export default function Home() {
   const bossDanger = level.secretType === "boss" && clicks >= 3;
 
   return (
-    <main
+    <main style={{ fontFamily: "var(--font-orbitron)" }}
       className={`min-h-[100dvh] text-white flex flex-col items-center justify-start gap-3 px-3 sm:px-6 pt-2 pb-3 sm:pt-4 relative overflow-hidden ${
         level.secretType === "boss" ? "bg-black" : "bg-zinc-950"
       }`}
