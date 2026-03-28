@@ -2634,7 +2634,7 @@ export default function Home() {
 
       {level.secretType === "boss" && !finalCelebration && (
         <>
-          <div className="absolute inset-0 bg-gradient-to-b from-red-950/10 via-red-900/10 to-black pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-b from-red-950/10 via-red-900/10 to-black pointer-events-none" / style={{ backgroundImage: "url(/bg-galaxy.jpg)", backgroundSize: "cover", backgroundPosition: "center", backgroundRepeat: "no-repeat" }}>
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div
               className={`w-[90vw] h-[90vw] max-w-[900px] max-h-[900px] rounded-full bg-red-700/20 blur-3xl ${
