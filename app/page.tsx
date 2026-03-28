@@ -1000,7 +1000,7 @@ export default function Home() {
   const boardPaddingClass = isMobile ? "p-2" : "p-3";
   const finalBoardPaddingClass = isMobile ? "p-2" : "p-3";
 
-  const horizontalPadding = isMobile ? 48 : 80;
+  const horizontalPadding = isMobile ? 64 : 80;
   const boardGapPx = isMobile ? 4 : 8;
 
   const responsiveCellSize = useMemo(() => {
