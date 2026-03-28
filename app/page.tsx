@@ -1184,13 +1184,13 @@ export default function Home() {
     });
   }
 
-  async function refreshRanking() {
+  async function refreshRanking(): Promise<RankingEntry[]> {
     try {
       const res = await fetch("/api/ranking", { cache: "no-store" });
 
       if (!res.ok) {
         setRanking([]);
-        return;
+        return [];
       }
 
       const data = await res.json();
@@ -1198,11 +1198,14 @@ export default function Home() {
       if (Array.isArray(data)) {
         const formatted = normalizeRankingEntries(data);
         setRanking(formatted);
+        return formatted;
       } else {
         setRanking([]);
+        return [];
       }
     } catch {
       setRanking([]);
+      return [];
     }
   }
 
@@ -1328,6 +1331,7 @@ export default function Home() {
 
     setPlayerName("");
     setRankingSaved(false);
+    setRankingPositionMessage("");
     setShowRankingModal(false);
     setShowInstructions(false);
     setCompletionElapsedSeconds(null);
