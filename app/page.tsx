@@ -50,7 +50,7 @@ type RankingEntry = {
   createdAt?: string;
 };
 
-const SHARE_LINK = "https://encontreofim.com/";
+const SHARE_LINK = "https://encontreofim.vercel.app/";
 const HELP_DEV_LINK =
   "https://www.youtube.com/@tiguiando?sub_confirmation=1&sub_confirmation=1";
 
@@ -905,6 +905,8 @@ export default function Home() {
   const [introText, setIntroText] = useState("");
   const [introFading, setIntroFading] = useState(false);
 
+  const introFinishedRef = useRef(false);
+
   const sessionStartRef = useRef<number | null>(null);
   const mainRunStartRef = useRef<number | null>(null);
   const secretRunStartRef = useRef<number | null>(null);
@@ -946,6 +948,7 @@ export default function Home() {
   }
 
   function startMainRunTimer() {
+    if (showIntro || !introFinishedRef.current) return;
     if (!mainRunStartRef.current) {
       mainRunStartRef.current = Date.now();
     }
@@ -997,7 +1000,7 @@ export default function Home() {
   const boardPaddingClass = isMobile ? "p-2" : "p-3";
   const finalBoardPaddingClass = isMobile ? "p-2" : "p-3";
 
-  const horizontalPadding = isMobile ? 20 : 80;
+  const horizontalPadding = isMobile ? 48 : 80;
   const boardGapPx = isMobile ? 4 : 8;
 
   const responsiveCellSize = useMemo(() => {
@@ -1048,6 +1051,7 @@ export default function Home() {
   }
 
   function startSessionTimer() {
+    if (showIntro || !introFinishedRef.current) return;
     if (!sessionStartRef.current) {
       sessionStartRef.current = Date.now();
     }
@@ -1450,6 +1454,8 @@ export default function Home() {
   useEffect(() => {
     const fullText = "SEASON 1: THE VOID";
     let index = 0;
+    let holdTimeout: number | null = null;
+    let endTimeout: number | null = null;
 
     const typingInterval = window.setInterval(() => {
       index += 1;
@@ -1458,27 +1464,32 @@ export default function Home() {
       if (index >= fullText.length) {
         window.clearInterval(typingInterval);
 
-        const holdTimeout = window.setTimeout(() => {
+        holdTimeout = window.setTimeout(() => {
           setIntroFading(true);
 
-          const endTimeout = window.setTimeout(() => {
+          endTimeout = window.setTimeout(() => {
+            introFinishedRef.current = true;
             setShowIntro(false);
+
+            const now = Date.now();
+            if (!sessionStartRef.current) {
+              sessionStartRef.current = now;
+            }
+            if (!mainRunStartRef.current) {
+              mainRunStartRef.current = now;
+            }
+            lastInteractionRef.current = now;
+            lastKnockRef.current = now;
           }, 700);
-
-          return () => window.clearTimeout(endTimeout);
         }, 900);
-
-        return () => window.clearTimeout(holdTimeout);
       }
     }, 90);
 
     return () => {
       window.clearInterval(typingInterval);
+      if (holdTimeout) window.clearTimeout(holdTimeout);
+      if (endTimeout) window.clearTimeout(endTimeout);
     };
-  }, []);
-
-  useEffect(() => {
-    refreshRanking();
   }, []);
 
   useEffect(() => {
@@ -1735,13 +1746,6 @@ export default function Home() {
     touchInteraction();
   }, [currentLevel, boardSeed, level.cols, level.rows, level.secretType, trollMode]);
 
-  useEffect(() => {
-    startSessionTimer();
-    startMainRunTimer();
-    const now = Date.now();
-    lastInteractionRef.current = now;
-    lastKnockRef.current = now;
-  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -2064,6 +2068,7 @@ export default function Home() {
         );
 
         flashStatus(envelope.text);
+        setHint(getDirection(cell, treasure, level.cols, level.rows, trollMode));
 
         const distance = Math.abs(cell.col - treasure.col) + Math.abs(cell.row - treasure.row);
         setClickedCells((prev) => [...prev, key]);
@@ -2470,7 +2475,7 @@ export default function Home() {
 
   return (
     <main
-      className={`min-h-[100dvh] text-white flex flex-col items-center justify-start gap-3 px-3 sm:px-6 pt-2 pb-3 sm:pt-4 relative overflow-hidden ${
+      className={`min-h-[100dvh] text-white flex flex-col items-center justify-start gap-3 px-3 sm:px-6 pt-2 pb-32 sm:pb-24 sm:pt-4 relative overflow-hidden ${
         level.secretType === "boss" ? "bg-black" : "bg-zinc-950"
       }`}
       style={{
@@ -2884,7 +2889,7 @@ export default function Home() {
         </div>
       )}
 
-      <div className="relative z-10 w-full flex flex-col items-center gap-3">
+      <div className="relative z-10 w-full flex flex-col items-center gap-3 pb-24 sm:pb-20">
         <h1
           onClick={handleTitleClick}
           className={`${isMobile ? "text-3xl" : "text-4xl"} font-bold cursor-pointer select-none text-center leading-tight`}
@@ -3229,7 +3234,7 @@ export default function Home() {
           </div>
         ) : (
           <div
-            className={`grid ${boardGapClass} ${boardPaddingClass} rounded-2xl max-w-full overflow-hidden ${
+            className={`grid ${boardGapClass} ${boardPaddingClass} rounded-2xl max-w-[calc(100vw-24px)] sm:max-w-full mx-auto overflow-hidden ${
               level.secretType === "boss"
                 ? "bg-gradient-to-b from-zinc-950 to-red-950/50 border border-red-900/50 shadow-[0_0_40px_rgba(127,29,29,0.25)]"
                 : level.secretType === "alien"
@@ -3612,7 +3617,7 @@ export default function Home() {
       {!finalCelebration && (
         <div
           className={`fixed left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 ${
-            isMobile ? "bottom-12" : "bottom-14"
+            isMobile ? "bottom-16" : "bottom-16"
           }`}
         >
           <button
@@ -3649,15 +3654,14 @@ export default function Home() {
           </button>
         </div>
       )}
-      <div className="text-xs text-zinc-500">
-        SEASON 1 - THE VOID
-      </div>
-      <div className="fixed bottom-2 left-1/2 -translate-x-1/2 z-40 flex items-center gap-4">
+      <div className="fixed bottom-3 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 text-[10px] sm:text-xs text-zinc-500/70 tracking-[0.14em] uppercase whitespace-nowrap">
+        <span>SEASON 1 - THE VOID</span>
+        <span>|</span>
         <a
           href={HELP_DEV_LINK}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-[10px] sm:text-xs text-zinc-500/70 hover:text-zinc-300 transition tracking-[0.18em] uppercase"
+          className="hover:text-zinc-300 transition"
         >
           HELP the DEV
         </a>
