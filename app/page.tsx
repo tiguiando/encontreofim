@@ -2878,23 +2878,32 @@ export default function Home() {
                   Ninguém escapou ainda.
                 </div>
               ) : (
-                displayRanking.map((entry, index) => (
-                  <div
-                    key={`${entry.name}-${index}`}
-                    className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-zinc-800 gap-2"
-                  >
-                    <span className="font-medium min-w-[72px] truncate">
-                      #{index + 1} {entry.name}
-                    </span>
+                <>
+                  <div className="grid grid-cols-[minmax(0,1fr)_auto_56px] items-center px-3 pb-1 text-[10px] sm:text-[11px] uppercase tracking-[0.18em] text-zinc-400">
+                    <span className="text-left">Jogador</span>
+                    <span className="text-right">Conquistas 🏆</span>
+                    <span className="text-center">⏱️</span>
+                  </div>
 
-                    <span className="flex items-center gap-2 text-right ml-auto">
+                  {displayRanking.map((entry, index) => (
+                    <div
+                      key={`${entry.name}-${index}`}
+                      className="grid grid-cols-[minmax(0,1fr)_auto_56px] items-center px-3 py-2.5 rounded-xl bg-zinc-800 gap-2"
+                    >
+                      <span className="font-medium truncate text-left">
+                        #{index + 1} {entry.name}
+                      </span>
+
                       <span className="min-w-[64px] text-right truncate">
                         {entry.secrets.join(" ")}
                       </span>
-                      <span className="font-mono text-zinc-200">{formatTime(entry.time)}</span>
-                    </span>
-                  </div>
-                ))
+
+                      <span className="font-mono text-zinc-200 text-center">
+                        {formatTime(entry.time)}
+                      </span>
+                    </div>
+                  ))}
+                </>
               )}
             </div>
           </div>
