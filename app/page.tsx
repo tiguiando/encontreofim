@@ -1000,8 +1000,8 @@ export default function Home() {
   const boardPaddingClass = isMobile ? "p-2" : "p-3";
   const finalBoardPaddingClass = isMobile ? "p-2" : "p-3";
 
-  const horizontalPadding = isMobile ? 64 : 80;
-  const boardGapPx = isMobile ? 4 : 8;
+  const horizontalPadding = isMobile ? 76 : 80;
+  const boardGapPx = isMobile ? 3 : 8;
 
   const responsiveCellSize = useMemo(() => {
     const availableWidth = viewportWidth - horizontalPadding;
@@ -1025,7 +1025,7 @@ export default function Home() {
     }
 
     if (isMobile) {
-      return Math.max(15, Math.min(raw - 1, 31));
+      return Math.max(14, Math.min(raw - 2, 30));
     }
 
     return Math.max(22, Math.min(raw, 46));
@@ -1063,6 +1063,7 @@ export default function Home() {
   }
 
   function startRabbitRun() {
+    if (showIntro || !introFinishedRef.current) return;
     rabbitRunStartRef.current = Date.now();
     rabbitRunSequenceRef.current = [];
   }
@@ -1112,6 +1113,7 @@ export default function Home() {
   }
 
   function startTrollRun() {
+    if (showIntro || !introFinishedRef.current) return;
     trollRunStartRef.current = Date.now();
     trollRunSequenceRef.current = [];
   }
@@ -1477,6 +1479,14 @@ export default function Home() {
             }
             if (!mainRunStartRef.current) {
               mainRunStartRef.current = now;
+            }
+            if (currentLevel === 1 && !rabbitRunStartRef.current) {
+              rabbitRunStartRef.current = now;
+              rabbitRunSequenceRef.current = [];
+            }
+            if (currentLevel === 1 && trollMode && !trollRunStartRef.current) {
+              trollRunStartRef.current = now;
+              trollRunSequenceRef.current = [];
             }
             lastInteractionRef.current = now;
             lastKnockRef.current = now;
@@ -3236,7 +3246,7 @@ export default function Home() {
           </div>
         ) : (
           <div
-            className={`grid ${boardGapClass} ${boardPaddingClass} rounded-2xl max-w-[calc(100vw-24px)] sm:max-w-full mx-auto overflow-hidden ${
+            className={`grid ${boardGapClass} ${boardPaddingClass} rounded-2xl max-w-[calc(100vw-32px)] sm:max-w-full mx-auto overflow-hidden ${
               level.secretType === "boss"
                 ? "bg-gradient-to-b from-zinc-950 to-red-950/50 border border-red-900/50 shadow-[0_0_40px_rgba(127,29,29,0.25)]"
                 : level.secretType === "alien"
