@@ -3587,7 +3587,9 @@ export default function Home() {
           </button>
         </div>
       )}
-
+      <div className="text-xs text-zinc-500">
+        SEASON 1 - THE VOID
+      </div>
       <div className="fixed bottom-2 left-1/2 -translate-x-1/2 z-40 flex items-center gap-4">
         <a
           href={HELP_DEV_LINK}
