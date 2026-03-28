@@ -2407,11 +2407,12 @@ export default function Home() {
   const bossDanger = level.secretType === "boss" && clicks >= 3;
 
   return (
-    <main style={{ fontFamily: "var(--font-orbitron)" }}
+    <main
       className={`min-h-[100dvh] text-white flex flex-col items-center justify-start gap-3 px-3 sm:px-6 pt-2 pb-3 sm:pt-4 relative overflow-hidden ${
         level.secretType === "boss" ? "bg-black" : "bg-zinc-950"
       }`}
       style={{
+    fontFamily: "var(--font-orbitron)",
         paddingTop: "max(env(safe-area-inset-top), 8px)",
         backgroundImage: "url('/bg-galaxy.jpg')",
         backgroundSize: "cover",
