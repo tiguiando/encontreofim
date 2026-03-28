@@ -1478,10 +1478,6 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    refreshRanking();
-  }, []);
-
-  useEffect(() => {
     if (!supabaseClient) return;
 
     const sessionId =
