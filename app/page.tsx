@@ -1478,6 +1478,10 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    refreshRanking();
+  }, []);
+
+  useEffect(() => {
     if (!supabaseClient) return;
 
     const sessionId =
@@ -2391,9 +2395,13 @@ export default function Home() {
       collectedRewards.length > 0
         ? `\nConquistas: ${collectedRewards.map((reward) => reward.emoji).join(" ")}`
         : "";
-    const fimLine = finalCelebration
-      ? "\nEU ENCONTREI O FIM!"
-      : "\n ";
+    const reachedFim =
+      finalCelebration ||
+      collectedRewards.length >= 5 ||
+      fimUnlocked;
+    const fimLine = reachedFim
+      ? "\nE ENCONTREI O FIM!!!"
+      : "";
 
     const text = `Eu joguei o jogo Encontre o FIM...\nSequência mais rápida: ${formatTime(shareMainTime)}${rewardsLine}${fimLine}\n\n${SHARE_LINK}`;
 
