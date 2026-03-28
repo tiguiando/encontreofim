@@ -2377,7 +2377,13 @@ export default function Home() {
       className={`min-h-[100dvh] text-white flex flex-col items-center justify-start gap-3 px-3 sm:px-6 pt-2 pb-3 sm:pt-4 relative overflow-hidden ${
         level.secretType === "boss" ? "bg-black" : "bg-zinc-950"
       }`}
-      style={{ paddingTop: "max(env(safe-area-inset-top), 8px)" }}
+      style={{
+        paddingTop: "max(env(safe-area-inset-top), 8px)",
+        backgroundImage: "url('/bg-galaxy.jpg')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+      }}
     >
       <style jsx global>{`
         @keyframes treasurePop {
@@ -2634,7 +2640,7 @@ export default function Home() {
 
       {level.secretType === "boss" && !finalCelebration && (
         <>
-          <div className="absolute inset-0 bg-gradient-to-b from-red-950/10 via-red-900/10 to-black pointer-events-none" / style={{ backgroundImage: "url(/bg-galaxy.jpg)", backgroundSize: "cover", backgroundPosition: "center", backgroundRepeat: "no-repeat" }}>
+          <div className="absolute inset-0 bg-gradient-to-b from-red-950/10 via-red-900/10 to-black pointer-events-none" />
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div
               className={`w-[90vw] h-[90vw] max-w-[900px] max-h-[900px] rounded-full bg-red-700/20 blur-3xl ${
