@@ -1025,7 +1025,7 @@ export default function Home() {
     }
 
     if (isMobile) {
-      return Math.max(16, Math.min(raw, 32));
+      return Math.max(15, Math.min(raw - 1, 31));
     }
 
     return Math.max(22, Math.min(raw, 46));
