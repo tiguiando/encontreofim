@@ -3546,7 +3546,7 @@ export default function Home() {
           <button
             onClick={resetGame}
             className={`font-semibold transition ${
-              showMainFinalMessage || (found && level.isSecret)
+              showMainFinalMessage || (found && level.isSecret) || (!found && clicks >= MAX_CLICKS && !gameOver)
                 ? "bg-amber-400 hover:bg-amber-300 text-black"
                 : "bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white"
             } ${isMobile ? "px-4 py-2 text-sm rounded-lg" : "px-5 py-3 rounded-xl"}`}
