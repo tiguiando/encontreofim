@@ -2346,7 +2346,7 @@ export default function Home() {
     try {
       if (navigator.share) {
         await navigator.share({
-          title: "Encontre o Fim",
+          title: "Encontre o FIM",
           text,
         });
       } else {
@@ -2841,7 +2841,7 @@ export default function Home() {
                       ? "JACKPOT"
                       : level.secretType === "bandit"
                         ? "GOLPISTA"
-                        : "Encontre o Fim"}
+                        : "Encontre o FIM"}
         </h1>
 
         {!finalCelebration && (
