@@ -3435,11 +3435,90 @@ export default function Home() {
         )}
 
         <div className="flex flex-wrap items-center justify-center gap-2">
+          {!finalCelebration && found && !mainGameFinished && !gameFinished && currentLevel < 3 && (
+            <button
+              onClick={goToNextLevel}
+              className={`bg-amber-400 hover:bg-amber-300 text-black font-semibold transition ${
+                isMobile ? "px-4 py-2 text-sm rounded-lg" : "px-5 py-3 rounded-xl"
+              }`}
+            >
+              Ir para o próximo nível
+            </button>
+          )}
+
+          {!finalCelebration && heartSecretUnlocked && mainGameFinished && currentLevel !== 4 && (
+            <button
+              onClick={() => setCurrentLevel(4)}
+              className={`bg-rose-500 hover:bg-rose-400 text-white font-semibold transition ${
+                isMobile ? "px-4 py-2 text-sm rounded-lg" : "px-5 py-3 rounded-xl"
+              }`}
+            >
+              Jogar fase secreta
+            </button>
+          )}
+
+          {!finalCelebration && bossSecretUnlocked && mainGameFinished && currentLevel !== 5 && (
+            <button
+              onClick={() => setCurrentLevel(5)}
+              className={`bg-red-600 hover:bg-red-500 text-white font-semibold transition ${
+                isMobile ? "px-4 py-2 text-sm rounded-lg" : "px-5 py-3 rounded-xl"
+              }`}
+            >
+              Enfrentar BOSS
+            </button>
+          )}
+
+          {!finalCelebration && alienSecretUnlocked && mainGameFinished && currentLevel !== 6 && (
+            <button
+              onClick={() => setCurrentLevel(6)}
+              className={`bg-green-600 hover:bg-green-500 text-white font-semibold transition ${
+                isMobile ? "px-4 py-2 text-sm rounded-lg" : "px-5 py-3 rounded-xl"
+              }`}
+            >
+              Entrar na AREA 51
+            </button>
+          )}
+
+          {!finalCelebration && aceSecretUnlocked && mainGameFinished && currentLevel !== 7 && (
+            <button
+              onClick={() => setCurrentLevel(7)}
+              className={`bg-white hover:bg-zinc-200 text-black font-semibold transition ${
+                isMobile ? "px-4 py-2 text-sm rounded-lg" : "px-5 py-3 rounded-xl"
+              }`}
+            >
+              Virar a carta ACE
+            </button>
+          )}
+
+          {!finalCelebration && jackpotSecretUnlocked && mainGameFinished && currentLevel !== 8 && (
+            <button
+              onClick={() => setCurrentLevel(8)}
+              className={`bg-yellow-400 hover:bg-yellow-300 text-black font-semibold transition ${
+                isMobile ? "px-4 py-2 text-sm rounded-lg" : "px-5 py-3 rounded-xl"
+              }`}
+            >
+              Apostar no JACKPOT
+            </button>
+          )}
+
+          {!finalCelebration && banditSecretUnlocked && mainGameFinished && currentLevel !== 9 && (
+            <button
+              onClick={() => setCurrentLevel(9)}
+              className={`bg-white hover:bg-zinc-200 text-black font-semibold transition border border-zinc-500 ${
+                isMobile ? "px-4 py-2 text-sm rounded-lg" : "px-5 py-3 rounded-xl"
+              }`}
+            >
+              Caçar o GOLPISTA
+            </button>
+          )}
+
           <button
             onClick={resetGame}
-            className={`bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white font-semibold transition ${
-              isMobile ? "px-4 py-2 text-sm rounded-lg" : "px-5 py-3 rounded-xl"
-            }`}
+            className={`font-semibold transition ${
+              showMainFinalMessage
+                ? "bg-amber-400 hover:bg-amber-300 text-black"
+                : "bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white"
+            } ${isMobile ? "px-4 py-2 text-sm rounded-lg" : "px-5 py-3 rounded-xl"}`}
           >
             MAIS UMA VEZ!
           </button>
@@ -3454,84 +3533,7 @@ export default function Home() {
               Compartilhar resultado
             </button>
           )}
-
-          {!finalCelebration && found && !mainGameFinished && !gameFinished && currentLevel < 3 && (
-            <button
-              onClick={goToNextLevel}
-              className={`bg-amber-400 hover:bg-amber-300 text-black font-semibold transition ${
-                isMobile ? "px-4 py-2 text-sm rounded-lg" : "px-5 py-3 rounded-xl"
-              }`}
-            >
-              Ir para o próximo nível
-            </button>
-          )}
         </div>
-
-        {!finalCelebration && heartSecretUnlocked && mainGameFinished && currentLevel !== 4 && (
-          <button
-            onClick={() => setCurrentLevel(4)}
-            className={`bg-rose-500 hover:bg-rose-400 text-white font-semibold transition ${
-              isMobile ? "px-4 py-2 text-sm rounded-lg" : "px-5 py-3 rounded-xl"
-            }`}
-          >
-            Jogar fase secreta
-          </button>
-        )}
-
-        {!finalCelebration && bossSecretUnlocked && mainGameFinished && currentLevel !== 5 && (
-          <button
-            onClick={() => setCurrentLevel(5)}
-            className={`bg-red-600 hover:bg-red-500 text-white font-semibold transition ${
-              isMobile ? "px-4 py-2 text-sm rounded-lg" : "px-5 py-3 rounded-xl"
-            }`}
-          >
-            Enfrentar BOSS
-          </button>
-        )}
-
-        {!finalCelebration && alienSecretUnlocked && mainGameFinished && currentLevel !== 6 && (
-          <button
-            onClick={() => setCurrentLevel(6)}
-            className={`bg-green-600 hover:bg-green-500 text-white font-semibold transition ${
-              isMobile ? "px-4 py-2 text-sm rounded-lg" : "px-5 py-3 rounded-xl"
-            }`}
-          >
-            Entrar na AREA 51
-          </button>
-        )}
-
-        {!finalCelebration && aceSecretUnlocked && mainGameFinished && currentLevel !== 7 && (
-          <button
-            onClick={() => setCurrentLevel(7)}
-            className={`bg-white hover:bg-zinc-200 text-black font-semibold transition ${
-              isMobile ? "px-4 py-2 text-sm rounded-lg" : "px-5 py-3 rounded-xl"
-            }`}
-          >
-            Virar a carta ACE
-          </button>
-        )}
-
-        {!finalCelebration && jackpotSecretUnlocked && mainGameFinished && currentLevel !== 8 && (
-          <button
-            onClick={() => setCurrentLevel(8)}
-            className={`bg-yellow-400 hover:bg-yellow-300 text-black font-semibold transition ${
-              isMobile ? "px-4 py-2 text-sm rounded-lg" : "px-5 py-3 rounded-xl"
-            }`}
-          >
-            Apostar no JACKPOT
-          </button>
-        )}
-
-        {!finalCelebration && banditSecretUnlocked && mainGameFinished && currentLevel !== 9 && (
-          <button
-            onClick={() => setCurrentLevel(9)}
-            className={`bg-white hover:bg-zinc-200 text-black font-semibold transition border border-zinc-500 ${
-              isMobile ? "px-4 py-2 text-sm rounded-lg" : "px-5 py-3 rounded-xl"
-            }`}
-          >
-            Caçar o GOLPISTA
-          </button>
-        )}
 
         {!finalCelebration && trollMode && (
           <p className="text-amber-300 text-xs sm:text-sm">
