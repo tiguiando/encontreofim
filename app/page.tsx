@@ -50,7 +50,7 @@ type RankingEntry = {
   createdAt?: string;
 };
 
-const SHARE_LINK = "https://encontreofim.vercel.app/";
+const SHARE_LINK = "https://encontreofim.com/";
 const HELP_DEV_LINK =
   "https://www.youtube.com/@tiguiando?sub_confirmation=1&sub_confirmation=1";
 
