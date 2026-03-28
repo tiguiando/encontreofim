@@ -1636,7 +1636,8 @@ export default function Home() {
         const blockedWithTreasure = new Set(blocked);
         blockedWithTreasure.add(cellKey(nextTreasure));
 
-        const keysShouldExist = !hasKey && !giftUnlocked;
+        const giftAlreadyCollected = hasReward("gift");
+        const keysShouldExist = !giftAlreadyCollected && !hasKey && !giftUnlocked;
         if (keysShouldExist) {
           const firstKey = randomCellAvoiding(level.cols, level.rows, blockedWithTreasure);
           blockedWithTreasure.add(cellKey(firstKey));
@@ -1678,16 +1679,16 @@ export default function Home() {
         setLevelThreeLockCell(null);
         setDieCell(null);
 
-        const hintPool: HintEnvelopeId[] = [];
+        const uniqueHintPool: HintEnvelopeId[] = [];
 
-        if (!heartSecretUnlocked) hintPool.push("heart", "heart", "heart");
-        if (!alienSecretUnlocked) hintPool.push("alien", "alien", "alien");
-        if (!bossSecretUnlocked) hintPool.push("boss", "boss", "boss");
-        if (!aceSecretUnlocked) hintPool.push("ace", "ace", "ace");
-        if (!jackpotSecretUnlocked) hintPool.push("jackpot", "jackpot", "jackpot");
-        if (!banditSecretUnlocked) hintPool.push("bandit", "bandit", "bandit");
+        if (!heartSecretUnlocked) uniqueHintPool.push("heart");
+        if (!alienSecretUnlocked) uniqueHintPool.push("alien");
+        if (!bossSecretUnlocked) uniqueHintPool.push("boss");
+        if (!aceSecretUnlocked) uniqueHintPool.push("ace");
+        if (!jackpotSecretUnlocked) uniqueHintPool.push("jackpot");
+        if (!banditSecretUnlocked) uniqueHintPool.push("bandit");
 
-        hintPool.push("memory", "memory", "memory", "memory", "memory");
+        uniqueHintPool.push("memory");
 
         const generatedHints: HintEnvelope[] = [];
         const blockedForHints = new Set(blockedWithTreasure);
@@ -1697,9 +1698,15 @@ export default function Home() {
           Math.max(4, Math.floor((level.cols * level.rows) / 18))
         );
 
-        for (let i = 0; i < totalHintCards && hintPool.length > 0; i++) {
-          const randomIndex = Math.floor(Math.random() * hintPool.length);
-          const id = hintPool.splice(randomIndex, 1)[0];
+        const shuffledUniqueHints = [...uniqueHintPool].sort(() => Math.random() - 0.5);
+        const remainingPool = [...shuffledUniqueHints];
+
+        while (remainingPool.length < totalHintCards && shuffledUniqueHints.length > 0) {
+          remainingPool.push(...[...shuffledUniqueHints].sort(() => Math.random() - 0.5));
+        }
+
+        for (let i = 0; i < totalHintCards && i < remainingPool.length; i++) {
+          const id = remainingPool[i];
 
           const cell = randomCellAvoiding(level.cols, level.rows, blockedForHints);
           blockedForHints.add(cellKey(cell));
@@ -1724,7 +1731,10 @@ export default function Home() {
         const blockedWithTreasure = new Set(blocked);
         blockedWithTreasure.add(cellKey(nextTreasure));
 
-        const lockCell = randomCellAvoiding(level.cols, level.rows, blockedWithTreasure);
+        const giftAlreadyCollected = hasReward("gift");
+        const lockCell = giftAlreadyCollected
+          ? null
+          : randomCellAvoiding(level.cols, level.rows, blockedWithTreasure);
         setLevelThreeLockCell(lockCell);
         setLevelOneKeyCells([]);
         setLevelTwoHintCells([]);
@@ -1732,7 +1742,9 @@ export default function Home() {
         setDieCell(null);
 
         const blockedForBombs = new Set(blockedWithTreasure);
-        blockedForBombs.add(cellKey(lockCell));
+        if (lockCell) {
+          blockedForBombs.add(cellKey(lockCell));
+        }
 
         const bombs = randomManyCellsAvoiding(
           level.cols,
