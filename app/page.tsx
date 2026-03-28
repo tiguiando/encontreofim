@@ -702,9 +702,32 @@ function getRankingDayKey(value?: string) {
   return `${year}-${month}-${day}`;
 }
 
+
+function normalizePlayerNameKey(name: string) {
+  return name.trim().toLowerCase();
+}
+
+function isBetterRankingEntry(candidate: RankingEntry, current: RankingEntry) {
+  const candidateSecretsCount = candidate.secrets.length;
+  const currentSecretsCount = current.secrets.length;
+
+  if (candidateSecretsCount !== currentSecretsCount) {
+    return candidateSecretsCount > currentSecretsCount;
+  }
+
+  if (candidate.time !== current.time) {
+    return candidate.time < current.time;
+  }
+
+  const candidateCreated = candidate.createdAt ? new Date(candidate.createdAt).getTime() : 0;
+  const currentCreated = current.createdAt ? new Date(current.createdAt).getTime() : 0;
+
+  return candidateCreated > currentCreated;
+}
+
 function normalizeRankingEntries(items: any[]): RankingEntry[] {
-  const seen = new Set<string>();
-  const normalized: RankingEntry[] = [];
+  const dedupedByRun = new Set<string>();
+  const bestByPlayer = new Map<string, RankingEntry>();
 
   for (const item of items) {
     const name = String(item?.player_name ?? item?.name ?? "").trim();
@@ -712,20 +735,40 @@ function normalizeRankingEntries(items: any[]): RankingEntry[] {
     const secrets = Array.isArray(item?.secrets) ? item.secrets.map(String) : [];
     const createdAt = item?.created_at ?? item?.createdAt ?? item?.date ?? undefined;
     const dayKey = getRankingDayKey(createdAt);
-    const dedupeKey = `${name}|${time}|${secrets.join("")}|${dayKey}`;
+    const runKey = `${name}|${time}|${secrets.join("")}|${dayKey}`;
 
-    if (!name || seen.has(dedupeKey)) continue;
-    seen.add(dedupeKey);
+    if (!name || dedupedByRun.has(runKey)) continue;
+    dedupedByRun.add(runKey);
 
-    normalized.push({
+    const candidate: RankingEntry = {
       name,
       time,
       secrets,
       createdAt,
-    });
+    };
+
+    const playerKey = normalizePlayerNameKey(name);
+    const currentBest = bestByPlayer.get(playerKey);
+
+    if (!currentBest || isBetterRankingEntry(candidate, currentBest)) {
+      bestByPlayer.set(playerKey, candidate);
+    }
   }
 
-  return normalized;
+  return Array.from(bestByPlayer.values()).sort((a, b) => {
+    if (b.secrets.length !== a.secrets.length) {
+      return b.secrets.length - a.secrets.length;
+    }
+
+    if (a.time !== b.time) {
+      return a.time - b.time;
+    }
+
+    const aCreated = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const bCreated = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+
+    return bCreated - aCreated;
+  });
 }
 
 
@@ -1228,6 +1271,23 @@ export default function Home() {
     const finalTime = completionElapsedSeconds ?? totalElapsed;
     const finalSecrets = collectedRewards.map((reward) => reward.emoji);
 
+    const currentBestForPlayer = ranking.find(
+      (entry) => normalizePlayerNameKey(entry.name) === normalizePlayerNameKey(trimmedName)
+    );
+
+    const candidateEntry: RankingEntry = {
+      name: trimmedName,
+      time: finalTime,
+      secrets: finalSecrets,
+    };
+
+    if (currentBestForPlayer && !isBetterRankingEntry(candidateEntry, currentBestForPlayer)) {
+      setRankingSaved(true);
+      setRankingPositionMessage("SEU MELHOR RANKING JÁ É MELHOR");
+      flashStatus("Seu registro atual não superou sua melhor run.");
+      return;
+    }
+
     const newEntry = {
       playerName: trimmedName,
       totalTime: finalTime,
@@ -1257,10 +1317,8 @@ export default function Home() {
 
       const formatted = await refreshRanking();
 
-      const position = formatted.findIndex((entry) =>
-        entry.name === trimmedName &&
-        entry.time === finalTime &&
-        entry.secrets.join(" ") === finalSecrets.join(" ")
+      const position = formatted.findIndex(
+        (entry) => normalizePlayerNameKey(entry.name) === normalizePlayerNameKey(trimmedName)
       );
 
       if (position >= 0) {
