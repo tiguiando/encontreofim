@@ -152,7 +152,7 @@ const HEART_FINAL_EMOJIS = ["❤️", "💖", "💜", "💙", "💛"];
 const ACE_FINAL_EMOJIS = ["♠️", "♥️", "♦️", "♣️"];
 const BRAIN_FINAL_EMOJIS = ["🧠", "🧠", "🧠"];
 const JACKPOT_FINAL_EMOJIS = ["🎰", "🪙", "💰", "✨"];
-const BANDIT_FINAL_EMOJIS = ["🚨", "🔒", "🚔", "🕵️"];
+const BANDIT_FINAL_EMOJIS = ["🚨", "🔒", "🚔", "👤"];
 
 const FIM_PATTERN = [
   "111110101100011",
@@ -3034,7 +3034,7 @@ export default function Home() {
 
           {found && level.secretType === "bandit" && !finalCelebration && (
             <p className="text-base sm:text-lg text-zinc-100 font-semibold max-w-2xl">
-              🕵️ O golpista foi encontrado.
+              👤 O golpista foi encontrado.
               <br />Agora ele ficou atras das grades.
             </p>
           )}
@@ -3281,7 +3281,7 @@ export default function Home() {
                                 : level.secretType === "jackpot"
                                   ? "🎰"
                                   : level.secretType === "bandit"
-                                    ? "🕵️"
+                                    ? "👤"
                                     : "💎"}
                       </span>
                     ) : showGift ? (
