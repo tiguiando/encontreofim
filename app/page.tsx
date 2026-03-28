@@ -847,6 +847,7 @@ export default function Home() {
   const [playerName, setPlayerName] = useState("");
   const [ranking, setRanking] = useState<RankingEntry[]>([]);
   const [rankingSaved, setRankingSaved] = useState(false);
+  const [rankingPositionMessage, setRankingPositionMessage] = useState("");
   const [showRankingModal, setShowRankingModal] = useState(false);
   const [showInstructions, setShowInstructions] = useState(false);
 
