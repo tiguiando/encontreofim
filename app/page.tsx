@@ -2823,19 +2823,25 @@ export default function Home() {
 
       <div className="relative z-10 w-full flex flex-col items-center gap-3">
         <h1
-  className="text-5xl font-bold text-white tracking-[0.2em]"
-  style={{
-    fontFamily: 'Orbitron, sans-serif',
-    textShadow: `
-      0 0 10px rgba(255,255,255,0.9),
-      0 0 20px rgba(255,255,255,0.7),
-      0 0 40px rgba(255,255,255,0.5)
-    `,
-    filter: 'blur(0.2px)'
-  }}
->
-  ENCONTRE O FIM
-</h1>
+          onClick={handleTitleClick}
+          className={`${isMobile ? "text-3xl" : "text-4xl"} font-bold cursor-pointer select-none text-center leading-tight`}
+        >
+          {finalCelebration
+            ? "FIM"
+            : level.secretType === "heart"
+              ? "Fase Secreta"
+              : level.secretType === "boss"
+                ? "BOSS"
+                : level.secretType === "alien"
+                  ? "AREA 51"
+                  : level.secretType === "ace"
+                    ? "ACE"
+                    : level.secretType === "jackpot"
+                      ? "JACKPOT"
+                      : level.secretType === "bandit"
+                        ? "GOLPISTA"
+                        : "Encontre o Fim"}
+        </h1>
 
         {!finalCelebration && (
           <div className="flex gap-2 sm:gap-3 flex-wrap justify-center">
