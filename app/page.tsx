@@ -1344,7 +1344,6 @@ export default function Home() {
         alienSecretUnlocked && prev[1] === "5" && prev[2] === "1";
 
       if (alienPasswordClosed && levelId === 3) return prev;
-      if (prev[levelId]) return prev;
 
       return { ...prev, [levelId]: value };
     });
