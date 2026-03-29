@@ -223,17 +223,20 @@ function getDirection(
   const horizontal = to.col > from.col ? "→" : to.col < from.col ? "←" : "";
 
   const normalDir = vertical + horizontal;
-  const dir = trollMode ? invertDirection(normalDir) : normalDir;
 
-  const safeVertical = dir.includes("↑")
+  if (trollMode) {
+    return invertDirection(normalDir);
+  }
+
+  const safeVertical = normalDir.includes("↑")
     ? (from.row > 0 ? "↑" : "")
-    : dir.includes("↓")
+    : normalDir.includes("↓")
       ? (from.row < rows - 1 ? "↓" : "")
       : "";
 
-  const safeHorizontal = dir.includes("←")
+  const safeHorizontal = normalDir.includes("←")
     ? (from.col > 0 ? "←" : "")
-    : dir.includes("→")
+    : normalDir.includes("→")
       ? (from.col < cols - 1 ? "→" : "")
       : "";
 
@@ -3546,7 +3549,7 @@ export default function Home() {
           <button
             onClick={resetGame}
             className={`font-semibold transition ${
-              showMainFinalMessage || (found && level.isSecret) || (!found && clicks >= MAX_CLICKS && !gameOver)
+              showMainFinalMessage || (found && level.isSecret)
                 ? "bg-amber-400 hover:bg-amber-300 text-black"
                 : "bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white"
             } ${isMobile ? "px-4 py-2 text-sm rounded-lg" : "px-5 py-3 rounded-xl"}`}
