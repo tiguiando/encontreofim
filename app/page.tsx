@@ -907,6 +907,8 @@ export default function Home() {
   const [showIntro, setShowIntro] = useState(true);
   const [introText, setIntroText] = useState("");
   const [introFading, setIntroFading] = useState(false);
+  const [bossDamageFlash, setBossDamageFlash] = useState(false);
+  const [trollSecondsLeft, setTrollSecondsLeft] = useState<number | null>(null);
 
   const introFinishedRef = useRef(false);
 
@@ -1406,6 +1408,8 @@ export default function Home() {
     setShowRankingModal(false);
     setShowInstructions(false);
     setCompletionElapsedSeconds(null);
+    setBossDamageFlash(false);
+    setTrollSecondsLeft(null);
 
     setDieCell(null);
     setHasDie(false);
@@ -1837,6 +1841,8 @@ export default function Home() {
           if (prev >= MAX_CLICKS) return prev;
           return prev + 1;
         });
+        setBossDamageFlash(true);
+        window.setTimeout(() => setBossDamageFlash(false), 100);
         flashStatus("Tomou dano do boss. -1 chance.");
         lastBossActionRef.current = Date.now();
       }
@@ -1863,6 +1869,52 @@ export default function Home() {
       if (statusTimeoutRef.current) window.clearTimeout(statusTimeoutRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    if (
+      !trollMode ||
+      hasReward("brain") ||
+      finalCelebration ||
+      mainGameFinished ||
+      gameFinished ||
+      gameOver ||
+      currentLevel < 1 ||
+      currentLevel > 3 ||
+      !trollRunStartRef.current
+    ) {
+      setTrollSecondsLeft(null);
+      return;
+    }
+
+    const tick = () => {
+      if (!trollRunStartRef.current) {
+        setTrollSecondsLeft(null);
+        return;
+      }
+
+      const elapsed = Math.floor((Date.now() - trollRunStartRef.current) / 1000);
+      const remaining = Math.max(0, BRAIN_RUN_LIMIT_SECONDS - elapsed);
+      setTrollSecondsLeft(remaining);
+
+      if (remaining <= 0) {
+        flashStatus("🧠 O tempo do modo troll acabou.");
+        resetGame();
+      }
+    };
+
+    tick();
+    const interval = window.setInterval(tick, 250);
+
+    return () => window.clearInterval(interval);
+  }, [
+    trollMode,
+    currentLevel,
+    finalCelebration,
+    mainGameFinished,
+    gameFinished,
+    gameOver,
+    collectedRewards,
+  ]);
 
   async function openRankingModal() {
     await refreshRanking();
@@ -2952,47 +3004,66 @@ export default function Home() {
             {visibleLevels.map((lvl) => {
               const unlocked = unlockedLevels.includes(lvl.id);
               const active = currentLevel === lvl.id;
+              const isMainLevel = lvl.id <= 3;
+              const completed =
+                lvl.id === 1
+                  ? unlockedLevels.includes(2) || mainGameFinished
+                  : lvl.id === 2
+                    ? unlockedLevels.includes(3) || mainGameFinished
+                    : lvl.id === 3
+                      ? mainGameFinished
+                      : false;
+
+              const commonClass = `font-semibold transition border ${
+                isMobile ? "px-3 py-2 text-sm rounded-lg" : "px-4 py-2 rounded-xl"
+              } ${
+                active
+                  ? lvl.secretType === "heart"
+                    ? "bg-rose-500 text-white border-rose-300"
+                    : lvl.secretType === "boss"
+                      ? "bg-red-600 text-white border-red-400"
+                      : lvl.secretType === "alien"
+                        ? "bg-green-600 text-white border-green-400"
+                        : lvl.secretType === "ace"
+                          ? "bg-white text-black border-zinc-300"
+                          : lvl.secretType === "jackpot"
+                            ? "bg-yellow-400 text-black border-yellow-200"
+                            : lvl.secretType === "bandit"
+                              ? "bg-white text-black border-zinc-300"
+                              : "bg-amber-400 text-black border-amber-300"
+                  : unlocked
+                    ? "bg-zinc-800 text-white border-zinc-700"
+                    : "bg-zinc-900 text-zinc-500 border-zinc-800 cursor-not-allowed"
+              }`;
+
+              const label = `${completed ? "✅ " : ""}${lvl.name}${!unlocked ? " 🔒" : ""}`;
+
+              if (isMainLevel) {
+                return (
+                  <div
+                    key={lvl.id}
+                    className={commonClass}
+                  >
+                    {label}
+                  </div>
+                );
+              }
 
               return (
                 <button
                   key={lvl.id}
                   onClick={() => goToLevel(lvl.id)}
                   disabled={!unlocked}
-                  className={`font-semibold transition border ${
-                    isMobile ? "px-3 py-2 text-sm rounded-lg" : "px-4 py-2 rounded-xl"
-                  } ${
-                    active
-                      ? lvl.secretType === "heart"
-                        ? "bg-rose-500 text-white border-rose-300"
-                        : lvl.secretType === "boss"
-                          ? "bg-red-600 text-white border-red-400"
-                          : lvl.secretType === "alien"
-                            ? "bg-green-600 text-white border-green-400"
-                            : lvl.secretType === "ace"
-                              ? "bg-white text-black border-zinc-300"
-                              : lvl.secretType === "jackpot"
-                                ? "bg-yellow-400 text-black border-yellow-200"
-                                : lvl.secretType === "bandit"
-                                  ? "bg-white text-black border-zinc-300"
-                                  : "bg-amber-400 text-black border-amber-300"
-                      : unlocked
-                        ? "bg-zinc-800 text-white border-zinc-700 hover:bg-zinc-700"
-                        : "bg-zinc-900 text-zinc-500 border-zinc-800 cursor-not-allowed"
-                  }`}
+                  className={`${commonClass} ${unlocked ? "hover:bg-zinc-700" : ""}`}
                 >
-                  {lvl.name} {!unlocked && "🔒"}
+                  {label}
                 </button>
               );
-            })}
+            })}}
           </div>
         )}
 
         <div className={`text-center ${isMobile ? "space-y-1 min-h-[108px]" : "space-y-1 min-h-[150px]"}`}>
-          {!finalCelebration && (
-            <p className={isMobile ? "text-base font-semibold" : "text-xl font-semibold"}>
-              {level.name}
-            </p>
-          )}
 
           {!finalCelebration && (
             <p className={isMobile ? "text-base" : "text-lg"}>
@@ -3272,7 +3343,7 @@ export default function Home() {
           <div
             className={`grid ${boardGapClass} ${boardPaddingClass} rounded-2xl max-w-[calc(100vw-32px)] sm:max-w-full mx-auto overflow-hidden ${
               level.secretType === "boss"
-                ? "bg-gradient-to-b from-zinc-950 to-red-950/50 border border-red-900/50 shadow-[0_0_40px_rgba(127,29,29,0.25)]"
+                ? "bg-gradient-to-b from-zinc-950 to-red-950/50 border border-white/25 shadow-[0_0_40px_rgba(127,29,29,0.25)]"
                 : level.secretType === "alien"
                   ? "bg-gradient-to-b from-lime-900/20 to-emerald-950/40 border border-lime-400/20 shadow-[0_0_40px_rgba(132,204,22,0.18)]"
                   : level.secretType === "ace"
@@ -3368,7 +3439,7 @@ export default function Home() {
                           ? level.secretType === "heart"
                             ? "bg-rose-500 text-white heart-pulse"
                             : level.secretType === "boss"
-                              ? "bg-red-600 text-white boss-pulse border border-red-300"
+                              ? "bg-red-600 text-white boss-pulse border border-white"
                               : level.secretType === "alien"
                                 ? "bg-lime-400 text-black alien-pulse border border-lime-200"
                                 : level.secretType === "ace"
@@ -3382,7 +3453,7 @@ export default function Home() {
                             ? level.secretType === "heart"
                               ? "bg-rose-700"
                               : level.secretType === "boss"
-                                ? "bg-red-900 border border-red-700"
+                                ? `bg-red-900 border ${bossDamageFlash ? "border-white bg-red-700/90" : "border-white/70"}`
                                 : level.secretType === "alien"
                                   ? "bg-green-900 border border-green-700"
                                   : level.secretType === "ace"
@@ -3402,10 +3473,12 @@ export default function Home() {
                                       clicks >= 3 ? "border-red-500/90 bg-red-950/25" : "border-red-700/70"
                                     } boss-eye`
                                   : isBossTeeth
-                                    ? `bg-zinc-900 hover:bg-zinc-800 border border-red-900/80 ${
+                                    ? `border ${bossDamageFlash ? "bg-red-700/75 border-white" : "bg-zinc-900 hover:bg-zinc-800 border-white/70"} ${
                                         lostBoss ? "boss-teeth" : ""
                                       }`
-                                    : "bg-zinc-900 hover:bg-zinc-800 border border-red-950/70"
+                                    : bossDamageFlash
+                                      ? "bg-red-700/75 border border-white"
+                                      : "bg-zinc-900 hover:bg-zinc-800 border border-white/55"
                                 : level.secretType === "alien"
                                   ? isAlienEye
                                     ? "bg-zinc-950 hover:bg-zinc-900 border border-lime-300/70 alien-glow"
@@ -3549,7 +3622,7 @@ export default function Home() {
           <button
             onClick={resetGame}
             className={`font-semibold transition ${
-              showMainFinalMessage || (found && level.isSecret)
+              showMainFinalMessage || (found && level.isSecret) || (!found && clicks >= MAX_CLICKS && !gameOver)
                 ? "bg-amber-400 hover:bg-amber-300 text-black"
                 : "bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white"
             } ${isMobile ? "px-4 py-2 text-sm rounded-lg" : "px-5 py-3 rounded-xl"}`}
@@ -3570,9 +3643,20 @@ export default function Home() {
         </div>
 
         {!finalCelebration && trollMode && (
-          <p className="text-amber-300 text-xs sm:text-sm">
-            Modo troll ativo: as dicas estão invertidas. CORRA!!!
-          </p>
+          <div className="text-center">
+            <p className="text-amber-300 text-xs sm:text-sm">
+              Modo troll ativo: as dicas estão invertidas. CORRA!!!
+            </p>
+            {trollSecondsLeft !== null && currentLevel >= 1 && currentLevel <= 3 && (
+              <p
+                className={`text-sm sm:text-base font-semibold mt-1 ${
+                  trollSecondsLeft <= 10 ? "text-red-400 animate-pulse" : "text-amber-200"
+                }`}
+              >
+                ⏳ {formatTime(trollSecondsLeft)}
+              </p>
+            )}
+          </div>
         )}
 
         {!finalCelebration && found && !mainGameFinished && !gameFinished && !level.isSecret && (
