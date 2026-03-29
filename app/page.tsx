@@ -1649,55 +1649,6 @@ export default function Home() {
   }, []);
 
 
-  useEffect(() => {
-        const fullText = "SEASON 1: THE VOID";
-    let index = 0;
-    let holdTimeout: number | null = null;
-    let endTimeout: number | null = null;
-
-    const typingInterval = window.setInterval(() => {
-      index += 1;
-      setIntroText(fullText.slice(0, index));
-
-      if (index >= fullText.length) {
-        window.clearInterval(typingInterval);
-
-        holdTimeout = window.setTimeout(() => {
-          setIntroFading(true);
-
-          endTimeout = window.setTimeout(() => {
-            introFinishedRef.current = true;
-            setShowIntro(false);
-            setIntroSequenceDone(true);
-
-            const now = Date.now();
-            if (!sessionStartRef.current) {
-              sessionStartRef.current = now;
-            }
-            if (!mainRunStartRef.current) {
-              mainRunStartRef.current = now;
-            }
-            if (currentLevel === 1 && !rabbitRunStartRef.current) {
-              rabbitRunStartRef.current = now;
-              rabbitRunSequenceRef.current = [];
-            }
-            if (currentLevel === 1 && trollMode && !trollRunStartRef.current) {
-              trollRunStartRef.current = now;
-              trollRunSequenceRef.current = [];
-            }
-            lastInteractionRef.current = now;
-            lastKnockRef.current = now;
-          }, 700);
-        }, 900);
-      }
-    }, 90);
-
-    return () => {
-      window.clearInterval(typingInterval);
-      if (holdTimeout) window.clearTimeout(holdTimeout);
-      if (endTimeout) window.clearTimeout(endTimeout);
-    };
-  }, []);
 
   useEffect(() => {
     if (!supabaseClient) return;
@@ -3029,7 +2980,7 @@ export default function Home() {
             <p className="text-[11px] sm:text-xs tracking-[0.35em] uppercase text-zinc-500 mb-3">Season 1</p>
             <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3">Encontre o FIM</h2>
             <p className="text-zinc-400 text-sm sm:text-base mb-6">
-              Clique para começar com som e desbloquear os efeitos do jogo.
+              Desbloqueie os coletáveis para subir no ranking
             </p>
 
             <div className="flex items-center justify-center gap-3">
