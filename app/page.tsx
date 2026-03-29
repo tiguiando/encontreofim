@@ -1513,7 +1513,6 @@ export default function Home() {
     setBombCells([]);
     setLevelTwoHintCells([]);
     setOpenedHintCells([]);
-    setFoundHintCards([]);
     setFinalClickedCells([]);
     setLevelOneKeyCells([]);
     setRevealedKeyCell(null);
@@ -2058,6 +2057,20 @@ export default function Home() {
     collectedRewards,
   ]);
 
+  useEffect(() => {
+    setFoundHintCards((prev) => prev.filter((id) => shouldKeepHintCard(id)));
+    setOpenedHintCells((prev) => prev.filter((item) => shouldKeepHintCard(item.id)));
+    setLevelTwoHintCells((prev) => prev.filter((item) => shouldKeepHintCard(item.id)));
+  }, [
+    heartSecretUnlocked,
+    bossSecretUnlocked,
+    alienSecretUnlocked,
+    aceSecretUnlocked,
+    jackpotSecretUnlocked,
+    banditSecretUnlocked,
+    collectedRewards,
+  ]);
+
   async function openRankingModal() {
     await refreshRanking();
     setShowRankingModal(true);
@@ -2088,6 +2101,17 @@ export default function Home() {
 
   function handleHintCardClick(id: HintEnvelopeId) {
     flashStatus(HINT_TEXTS[id]);
+  }
+
+  function shouldKeepHintCard(id: HintEnvelopeId) {
+    if (id === "heart") return !heartSecretUnlocked;
+    if (id === "boss") return !bossSecretUnlocked;
+    if (id === "alien") return !alienSecretUnlocked;
+    if (id === "ace") return !aceSecretUnlocked;
+    if (id === "jackpot") return !jackpotSecretUnlocked;
+    if (id === "bandit") return !banditSecretUnlocked;
+    if (id === "memory") return !hasReward("brain");
+    return true;
   }
 
 
