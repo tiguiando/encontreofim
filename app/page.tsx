@@ -1931,7 +1931,7 @@ export default function Home() {
     const next = titleClicks + 1;
     setTitleClicks(next);
 
-    if (next >= 10 && !trollMode) {
+    if (next >= 5 && !trollMode) {
       setTrollMode(true);
       startTrollRun();
       flashStatus("Modo troll ativado. As dicas agora mentem. CORRA!!!");
@@ -2390,6 +2390,9 @@ export default function Home() {
       } else if (currentLevel === 3) {
         markRabbitRunProgress(3);
         markTrollRunProgress(3);
+        setTrollMode(false);
+        setTrollSecondsLeft(null);
+        resetTrollRunSequence();
         turtleRunActiveRef.current = false;
         turtleTriggeredRef.current = false;
         finishMainRunTimer();
