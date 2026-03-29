@@ -3059,7 +3059,7 @@ export default function Home() {
                   {label}
                 </button>
               );
-            })}}
+            })}
           </div>
         )}
 
