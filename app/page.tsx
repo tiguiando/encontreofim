@@ -911,6 +911,7 @@ export default function Home() {
   const [trollSecondsLeft, setTrollSecondsLeft] = useState<number | null>(null);
   const [audioUnlocked, setAudioUnlocked] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [introSequenceDone, setIntroSequenceDone] = useState(false);
 
   const introFinishedRef = useRef(false);
   const audioUnlockedRef = useRef(false);
@@ -1031,6 +1032,7 @@ export default function Home() {
     setShowIntro(true);
     setIntroText("");
     setIntroFading(false);
+    setIntroSequenceDone(false);
 
     const typingInterval = window.setInterval(() => {
       index += 1;
@@ -1045,6 +1047,7 @@ export default function Home() {
           window.setTimeout(() => {
             introFinishedRef.current = true;
             setShowIntro(false);
+            setIntroSequenceDone(true);
 
             const now = Date.now();
             if (!sessionStartRef.current) {
@@ -1665,6 +1668,7 @@ export default function Home() {
           endTimeout = window.setTimeout(() => {
             introFinishedRef.current = true;
             setShowIntro(false);
+            setIntroSequenceDone(true);
 
             const now = Date.now();
             if (!sessionStartRef.current) {
@@ -2759,7 +2763,8 @@ export default function Home() {
       style={{
     fontFamily: "var(--font-orbitron)",
         paddingTop: "max(env(safe-area-inset-top), 8px)",
-        backgroundImage: "url('/bg-galaxy.jpg')",
+        backgroundImage: introSequenceDone ? "url('/bg-galaxy.jpg')" : "none",
+        backgroundColor: "#000000",
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
@@ -3024,7 +3029,7 @@ export default function Home() {
             <p className="text-[11px] sm:text-xs tracking-[0.35em] uppercase text-zinc-500 mb-3">Season 1</p>
             <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3">Encontre o FIM</h2>
             <p className="text-zinc-400 text-sm sm:text-base mb-6">
-              
+              Clique para começar com som e desbloquear os efeitos do jogo.
             </p>
 
             <div className="flex items-center justify-center gap-3">
@@ -3063,7 +3068,7 @@ export default function Home() {
       )}
 
 
-      {level.secretType === "boss" && !finalCelebration && (
+      {introSequenceDone && level.secretType === "boss" && !finalCelebration && (
         <>
           <div className="absolute inset-0 bg-gradient-to-b from-red-950/10 via-red-900/10 to-black pointer-events-none" />
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -3076,7 +3081,7 @@ export default function Home() {
         </>
       )}
 
-      {level.secretType === "alien" && !finalCelebration && (
+      {introSequenceDone && level.secretType === "alien" && !finalCelebration && (
         <>
           <div className="absolute inset-0 bg-gradient-to-b from-green-950/10 via-emerald-900/10 to-zinc-950 pointer-events-none" />
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -3085,7 +3090,7 @@ export default function Home() {
         </>
       )}
 
-      {level.secretType === "ace" && !finalCelebration && (
+      {introSequenceDone && level.secretType === "ace" && !finalCelebration && (
         <>
           <div className="absolute inset-0 bg-gradient-to-b from-slate-800/10 via-zinc-900/10 to-black pointer-events-none" />
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -3094,7 +3099,7 @@ export default function Home() {
         </>
       )}
 
-      {level.secretType === "jackpot" && !finalCelebration && (
+      {introSequenceDone && level.secretType === "jackpot" && !finalCelebration && (
         <>
           <div className="absolute inset-0 bg-gradient-to-b from-yellow-900/10 via-amber-900/10 to-zinc-950 pointer-events-none" />
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -3103,7 +3108,7 @@ export default function Home() {
         </>
       )}
 
-      {level.secretType === "bandit" && !finalCelebration && (
+      {introSequenceDone && level.secretType === "bandit" && !finalCelebration && (
         <>
           <div className="absolute inset-0 bg-gradient-to-b from-zinc-800/10 via-zinc-900/10 to-black pointer-events-none" />
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -3206,6 +3211,7 @@ export default function Home() {
         </div>
       )}
 
+      {introSequenceDone && (
       <div className="relative z-10 w-full flex flex-col items-center gap-3 pb-24 sm:pb-20">
         <h1
           onClick={handleTitleClick}
@@ -3469,34 +3475,34 @@ export default function Home() {
             </p>
           )}
 
-          {found && level.secretType === "boss" && !finalCelebration && (
+          {found && introSequenceDone && level.secretType === "boss" && !finalCelebration && (
             <p className="text-base sm:text-lg text-red-300 font-semibold max-w-2xl boss-glow">
               💀 Eu jamais pensei que seria derrotado por um insolente como você...
               <br />Mas desta vez, você venceu.
             </p>
           )}
 
-          {found && level.secretType === "alien" && !finalCelebration && (
+          {found && introSequenceDone && level.secretType === "alien" && !finalCelebration && (
             <p className="text-base sm:text-lg text-green-300 font-semibold max-w-2xl alien-glow">
               👽 BUSQUE CONHECIMENTO...
             </p>
           )}
 
-          {found && level.secretType === "ace" && !finalCelebration && (
+          {found && introSequenceDone && level.secretType === "ace" && !finalCelebration && (
             <p className="text-base sm:text-lg text-zinc-100 font-semibold max-w-2xl ace-glow">
               ♠ Você puxou exatamente a carta certa.
               <br />Hoje o baralho jogou a seu favor.
             </p>
           )}
 
-          {found && level.secretType === "jackpot" && !finalCelebration && (
+          {found && introSequenceDone && level.secretType === "jackpot" && !finalCelebration && (
             <p className="text-base sm:text-lg text-yellow-300 font-semibold max-w-2xl">
               🎰 JACKPOT. Hoje a casa perdeu.
               <br />As moedas escolheram você.
             </p>
           )}
 
-          {found && level.secretType === "bandit" && !finalCelebration && (
+          {found && introSequenceDone && level.secretType === "bandit" && !finalCelebration && (
             <p className="text-base sm:text-lg text-zinc-100 font-semibold max-w-2xl">
               👤 O golpista foi encontrado.
               <br />Agora ele ficou atras das grades.
@@ -3963,9 +3969,10 @@ export default function Home() {
           </div>
         </div>
       </div>
+      )}
 
 
-      {!finalCelebration && (
+      {introSequenceDone && !finalCelebration && (
         <div
           className={`fixed left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 ${
             isMobile ? "bottom-16" : "bottom-16"
@@ -4016,6 +4023,7 @@ export default function Home() {
           </button>
         </div>
       )}
+      {introSequenceDone && (
       <div className="fixed bottom-3 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 text-[10px] sm:text-xs text-zinc-500/70 tracking-[0.14em] uppercase whitespace-nowrap">
         <span>SEASON 1 - THE VOID</span>
         <span>|</span>
@@ -4028,6 +4036,7 @@ export default function Home() {
           HELP the DEV
         </a>
       </div>
+      )}
 
     </main>
   );
