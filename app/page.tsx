@@ -909,8 +909,20 @@ export default function Home() {
   const [introFading, setIntroFading] = useState(false);
   const [bossDamageFlash, setBossDamageFlash] = useState(false);
   const [trollSecondsLeft, setTrollSecondsLeft] = useState<number | null>(null);
+  const [audioUnlocked, setAudioUnlocked] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
 
   const introFinishedRef = useRef(false);
+  const audioUnlockedRef = useRef(false);
+  const introAudioPlayedRef = useRef(false);
+  const introSoundRef = useRef<HTMLAudioElement | null>(null);
+  const diamondSoundRef = useRef<HTMLAudioElement | null>(null);
+  const explosionSoundRef = useRef<HTMLAudioElement | null>(null);
+  const hitSoundRef = useRef<HTMLAudioElement | null>(null);
+  const letterSoundRef = useRef<HTMLAudioElement | null>(null);
+  const rewardSoundRef = useRef<HTMLAudioElement | null>(null);
+  const diceSoundRef = useRef<HTMLAudioElement | null>(null);
+  const keySoundRef = useRef<HTMLAudioElement | null>(null);
 
   const sessionStartRef = useRef<number | null>(null);
   const mainRunStartRef = useRef<number | null>(null);
@@ -945,6 +957,117 @@ export default function Home() {
     () => LEVELS.find((lvl) => lvl.id === currentLevel)!,
     [currentLevel]
   );
+
+  function playSound(audioRef: { current: HTMLAudioElement | null }) {
+    if (!soundEnabled || !audioUnlocked) return;
+
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    try {
+      audio.pause();
+      audio.currentTime = 0;
+      const playPromise = audio.play();
+      if (playPromise && typeof playPromise.catch === "function") {
+        playPromise.catch(() => undefined);
+      }
+    } catch {
+      // ignore playback errors
+    }
+  }
+
+  function startGameExperience() {
+    if (audioUnlockedRef.current) return;
+
+    audioUnlockedRef.current = true;
+    setAudioUnlocked(true);
+
+    const refs = [
+      introSoundRef,
+      diamondSoundRef,
+      explosionSoundRef,
+      hitSoundRef,
+      letterSoundRef,
+      rewardSoundRef,
+      diceSoundRef,
+      keySoundRef,
+    ];
+
+    refs.forEach((audioRef) => {
+      const audio = audioRef.current;
+      if (!audio) return;
+      try {
+        audio.load();
+      } catch {
+        // ignore preload errors
+      }
+    });
+
+    if (!introAudioPlayedRef.current && soundEnabled) {
+      const audio = introSoundRef.current;
+      if (audio) {
+        try {
+          audio.pause();
+          audio.currentTime = 0;
+          const playPromise = audio.play();
+          if (playPromise && typeof playPromise.then === "function") {
+            playPromise
+              .then(() => {
+                introAudioPlayedRef.current = true;
+              })
+              .catch(() => undefined);
+          } else {
+            introAudioPlayedRef.current = true;
+          }
+        } catch {
+          // ignore intro playback errors
+        }
+      }
+    }
+
+    const fullText = "SEASON 1: THE VOID";
+    let index = 0;
+
+    setShowIntro(true);
+    setIntroText("");
+    setIntroFading(false);
+
+    const typingInterval = window.setInterval(() => {
+      index += 1;
+      setIntroText(fullText.slice(0, index));
+
+      if (index >= fullText.length) {
+        window.clearInterval(typingInterval);
+
+        window.setTimeout(() => {
+          setIntroFading(true);
+
+          window.setTimeout(() => {
+            introFinishedRef.current = true;
+            setShowIntro(false);
+
+            const now = Date.now();
+            if (!sessionStartRef.current) {
+              sessionStartRef.current = now;
+            }
+            if (!mainRunStartRef.current) {
+              mainRunStartRef.current = now;
+            }
+            if (currentLevel === 1 && !rabbitRunStartRef.current) {
+              rabbitRunStartRef.current = now;
+              rabbitRunSequenceRef.current = [];
+            }
+            if (currentLevel === 1 && trollMode && !trollRunStartRef.current) {
+              trollRunStartRef.current = now;
+              trollRunSequenceRef.current = [];
+            }
+            lastInteractionRef.current = now;
+            lastKnockRef.current = now;
+          }, 700);
+        }, 900);
+      }
+    }, 90);
+  }
 
   function resetMainRunTimer() {
     mainRunStartRef.current = null;
@@ -1229,6 +1352,7 @@ export default function Home() {
       if (prev.some((reward) => reward.id === id)) return prev;
 
       const next = [...prev, REWARD_META[id]];
+      playSound(rewardSoundRef);
 
       if (next.length >= 5 && !fimUnlocked) {
         freezeCompletionElapsed();
@@ -1445,6 +1569,68 @@ export default function Home() {
   }, [passwordLevelProgress, alienSecretUnlocked]);
 
   useEffect(() => {
+    introSoundRef.current = new Audio("/sounds/intro.wav");
+    diamondSoundRef.current = new Audio("/sounds/diamond.wav");
+    explosionSoundRef.current = new Audio("/sounds/explosion.wav");
+    hitSoundRef.current = new Audio("/sounds/hit.wav");
+    letterSoundRef.current = new Audio("/sounds/letter.wav");
+    rewardSoundRef.current = new Audio("/sounds/reward.wav");
+    diceSoundRef.current = new Audio("/sounds/dice.wav");
+    keySoundRef.current = new Audio("/sounds/key.wav");
+
+    const allAudio = [
+      introSoundRef.current,
+      diamondSoundRef.current,
+      explosionSoundRef.current,
+      hitSoundRef.current,
+      letterSoundRef.current,
+      rewardSoundRef.current,
+      diceSoundRef.current,
+      keySoundRef.current,
+    ];
+
+    allAudio.forEach((audio) => {
+      audio.preload = "auto";
+      audio.volume = 0.65;
+    });
+
+    if (introSoundRef.current) introSoundRef.current.volume = 0.6;
+    if (diamondSoundRef.current) diamondSoundRef.current.volume = 0.75;
+    if (explosionSoundRef.current) explosionSoundRef.current.volume = 0.8;
+    if (hitSoundRef.current) hitSoundRef.current.volume = 0.6;
+    if (letterSoundRef.current) letterSoundRef.current.volume = 0.65;
+    if (rewardSoundRef.current) rewardSoundRef.current.volume = 0.8;
+    if (diceSoundRef.current) diceSoundRef.current.volume = 0.7;
+    if (keySoundRef.current) keySoundRef.current.volume = 0.75;
+
+    return () => {
+      allAudio.forEach((audio) => {
+        audio.pause();
+        audio.src = "";
+      });
+    };
+  }, []);
+
+
+  useEffect(() => {
+    const allAudio = [
+      introSoundRef.current,
+      diamondSoundRef.current,
+      explosionSoundRef.current,
+      hitSoundRef.current,
+      letterSoundRef.current,
+      rewardSoundRef.current,
+      diceSoundRef.current,
+      keySoundRef.current,
+    ];
+
+    allAudio.forEach((audio) => {
+      if (!audio) return;
+      audio.muted = !soundEnabled;
+    });
+  }, [soundEnabled]);
+
+  useEffect(() => {
     function updateViewport() {
       const width = window.innerWidth;
       const height = window.innerHeight;
@@ -1461,7 +1647,7 @@ export default function Home() {
 
 
   useEffect(() => {
-    const fullText = "SEASON 1: THE VOID";
+        const fullText = "SEASON 1: THE VOID";
     let index = 0;
     let holdTimeout: number | null = null;
     let endTimeout: number | null = null;
@@ -1842,6 +2028,7 @@ export default function Home() {
           return prev + 1;
         });
         setBossDamageFlash(true);
+        playSound(hitSoundRef);
         window.setTimeout(() => setBossDamageFlash(false), 100);
         flashStatus("Tomou dano do boss. -1 chance.");
         lastBossActionRef.current = Date.now();
@@ -2030,6 +2217,7 @@ export default function Home() {
     }
 
     const result = Math.floor(Math.random() * 6) + 1;
+    playSound(diceSoundRef);
     flashSignal(`O dado rolou e o resultado foi ${result}.`);
 
     const revealable = getRevealableCells();
@@ -2113,6 +2301,7 @@ export default function Home() {
     );
 
     if (clickedBomb) {
+      playSound(explosionSoundRef);
       setClickedCells((prev) => [...prev, key]);
       setGameOver(true);
       setHint("");
@@ -2144,6 +2333,7 @@ export default function Home() {
           )
         );
 
+        playSound(letterSoundRef);
         flashStatus(envelope.text);
         setHint(getDirection(cell, treasure, level.cols, level.rows, trollMode));
 
@@ -2162,6 +2352,7 @@ export default function Home() {
       const clickedDie = dieCell.col === cell.col && dieCell.row === cell.row;
 
       if (clickedDie) {
+        playSound(diceSoundRef);
         setHasDie(true);
         setDieCell(null);
         setClickedCells((prev) => [...prev, key]);
@@ -2187,6 +2378,7 @@ export default function Home() {
       );
 
       if (clickedKey) {
+        playSound(keySoundRef);
         setHasKey(true);
         setRevealedKeyCell(clickedKey);
         setLevelOneKeyCells([]);
@@ -2379,6 +2571,10 @@ export default function Home() {
       setFound(true);
       setHint("");
       setStatusMessage("");
+
+      if (!level.isSecret && currentLevel >= 1 && currentLevel <= 3) {
+        playSound(diamondSoundRef);
+      }
 
       if (currentLevel < 3) {
         const nextLevel = currentLevel + 1;
@@ -2821,6 +3017,36 @@ export default function Home() {
           animation: floatSignal 1s ease-out forwards;
         }
       `}</style>
+
+      {!audioUnlocked && (
+        <div className="fixed inset-0 z-[130] bg-black/95 flex items-center justify-center px-6">
+          <div className="w-full max-w-md rounded-3xl border border-white/10 bg-zinc-950/90 backdrop-blur-xl shadow-2xl px-6 py-8 text-center">
+            <p className="text-[11px] sm:text-xs tracking-[0.35em] uppercase text-zinc-500 mb-3">Season 1</p>
+            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3">Encontre o FIM</h2>
+            <p className="text-zinc-400 text-sm sm:text-base mb-6">
+              
+            </p>
+
+            <div className="flex items-center justify-center gap-3">
+              <button
+                onClick={startGameExperience}
+                className="px-5 py-3 rounded-2xl bg-amber-400 hover:bg-amber-300 text-black font-semibold transition"
+              >
+                {soundEnabled ? "🔊 Começar" : "🔇 Começar"}
+              </button>
+
+              <button
+                onClick={() => setSoundEnabled((prev) => !prev)}
+                className="w-12 h-12 rounded-2xl border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 text-xl transition"
+                aria-label="Alternar som"
+                title="Alternar som"
+              >
+                {soundEnabled ? "🔊" : "🔇"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showIntro && (
         <div
@@ -3766,6 +3992,17 @@ export default function Home() {
             <span className={isMobile ? "text-sm leading-none" : "text-base leading-none"}>👤</span>
             <span className="text-[10px] leading-none mt-1">{onlineCount}</span>
           </div>
+
+          <button
+            onClick={() => setSoundEnabled((prev) => !prev)}
+            className={`rounded-full border border-zinc-700 bg-zinc-900/90 hover:bg-zinc-800 text-white flex items-center justify-center transition shadow-lg ${
+              isMobile ? "w-11 h-11 text-lg" : "w-12 h-12 text-xl"
+            }`}
+            title={soundEnabled ? "Desativar som" : "Ativar som"}
+            aria-label={soundEnabled ? "Desativar som" : "Ativar som"}
+          >
+            {soundEnabled ? "🔊" : "🔇"}
+          </button>
 
           <button
             onClick={openRankingModal}
