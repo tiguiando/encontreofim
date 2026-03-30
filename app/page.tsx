@@ -1527,7 +1527,6 @@ export default function Home() {
     setTitleClicks(0);
     setTrollMode(false);
 
-    setPlayerName("");
     setRankingSaved(false);
     setRankingPositionMessage("");
     setShowRankingModal(false);
@@ -1593,6 +1592,11 @@ export default function Home() {
     allAudio.forEach((audio) => {
       audio.preload = "auto";
       audio.volume = 0.65;
+      try {
+        audio.load();
+      } catch {
+        // ignore preload errors
+      }
     });
 
     if (introSoundRef.current) introSoundRef.current.volume = 0.6;
@@ -1630,6 +1634,30 @@ export default function Home() {
       audio.muted = !soundEnabled;
     });
   }, [soundEnabled]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const savedName = window.localStorage.getItem("encontreofim-player-name");
+    if (!savedName) return;
+
+    const safeName = maskBlockedWords(savedName).slice(0, 12);
+    if (!safeName) return;
+
+    setPlayerName(safeName);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const safeName = playerName.trim().slice(0, 12);
+    if (!safeName) {
+      window.localStorage.removeItem("encontreofim-player-name");
+      return;
+    }
+
+    window.localStorage.setItem("encontreofim-player-name", safeName);
+  }, [playerName]);
 
   useEffect(() => {
     function updateViewport() {
@@ -3006,6 +3034,24 @@ export default function Home() {
               Desbloqueie os coletáveis para subir no ranking
             </p>
 
+            <div className="mb-5">
+              <input
+                value={playerName}
+                onChange={(e) => {
+                  const nextValue = e.target.value.slice(0, 12);
+                  const maskedValue = maskBlockedWords(nextValue);
+                  setPlayerName(maskedValue);
+
+                  if (containsBlockedWord(nextValue) || maskedValue !== nextValue) {
+                    flashStatus("Nome inválido 🚫");
+                  }
+                }}
+                placeholder="SEU NOME"
+                maxLength={12}
+                className="w-full px-4 py-3 rounded-2xl bg-zinc-900 border border-zinc-700 text-white text-center outline-none focus:border-amber-400 text-sm sm:text-base"
+              />
+            </div>
+
             <div className="flex items-center justify-center gap-3">
               <button
                 onClick={startGameExperience}
@@ -3424,6 +3470,7 @@ export default function Home() {
                   }}
                   placeholder="Seu nome"
                   maxLength={12}
+                  autoComplete="nickname"
                   className="px-3 py-2 rounded bg-zinc-800 border border-zinc-600 text-white text-center outline-none focus:border-amber-400 text-sm sm:text-base"
                 />
 
