@@ -3037,7 +3037,8 @@ export default function Home() {
                 value={playerName}
                 onChange={(e) => {
                   const nextValue = e.target.value.slice(0, 12);
-                  setPlayerName(nextValue);
+                  const maskedValue = maskBlockedWords(nextValue);
+                  setPlayerName(maskedValue);
                 }}
                 placeholder="SEU NOME"
                 maxLength={12}
@@ -3472,7 +3473,8 @@ export default function Home() {
                   value={playerName}
                   onChange={(e) => {
                   const nextValue = e.target.value.slice(0, 12);
-                  setPlayerName(nextValue);
+                  const maskedValue = maskBlockedWords(nextValue);
+                  setPlayerName(maskedValue);
                 }}
                   placeholder="Seu nome"
                   maxLength={12}
