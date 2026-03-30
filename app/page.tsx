@@ -3057,7 +3057,16 @@ export default function Home() {
                 onClick={startGameExperience}
                 className="px-5 py-3 rounded-2xl bg-amber-400 hover:bg-amber-300 text-black font-semibold transition"
               >
-                {soundEnabled ? "🔊 Começar" : "🔇 Começar"}
+                Começar
+              </button>
+
+              <button
+                onClick={() => setShowInstructions(true)}
+                className="w-12 h-12 rounded-2xl border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 text-xl transition"
+                aria-label="Guia"
+                title="Guia"
+              >
+                📖
               </button>
 
               <button
@@ -3156,7 +3165,7 @@ export default function Home() {
 
       {showInstructions && (
         <div
-          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+          className="fixed inset-0 z-[140] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
           onClick={() => setShowInstructions(false)}
         >
           <div className="w-full max-w-md rounded-2xl border border-zinc-700 bg-zinc-900/95 shadow-2xl px-5 py-5 text-zinc-100">
