@@ -791,6 +791,11 @@ const BANNED_WORDS = [
 "pintao",
   "fukc",
   "buceta",
+  "cu",
+  "ass",
+  "asshole",
+  "hoe",
+  "putinha",
   "bct",
 
 ];
