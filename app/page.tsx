@@ -785,9 +785,14 @@ const BANNED_WORDS = [
   "merda",
   "puta",
   "foda",
+"pintão",
+"pinto",
+"pintudo",
+"pintao",
   "fukc",
   "buceta",
   "bct",
+
 ];
 
 function normalizeBlockedText(text: string) {
