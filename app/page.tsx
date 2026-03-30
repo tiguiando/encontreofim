@@ -3068,6 +3068,15 @@ export default function Home() {
               >
                 {soundEnabled ? "🔊" : "🔇"}
               </button>
+
+              <button
+                onClick={openRankingModal}
+                className="w-12 h-12 rounded-2xl border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 text-xl transition"
+                aria-label="Ver ranking"
+                title="Ranking"
+              >
+                🏆
+              </button>
             </div>
           </div>
         </div>
@@ -3168,7 +3177,7 @@ export default function Home() {
 
       {showRankingModal && !finalCelebration && (
         <div
-          className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 backdrop-blur-sm p-3 sm:p-4"
+          className="fixed inset-0 z-[140] flex items-center justify-center bg-black/70 backdrop-blur-sm p-3 sm:p-4"
           onClick={() => setShowRankingModal(false)}
         >
           <div
@@ -3201,9 +3210,9 @@ export default function Home() {
               ) : (
                 <>
                   <div className="grid grid-cols-[minmax(0,1fr)_auto_56px] items-center px-3 pb-1 text-[10px] sm:text-[11px] uppercase tracking-[0.18em] text-zinc-400">
-                    <span className="text-left">Jogador</span>
+                    <span className="text-left">Jogador 🎮</span>
                     <span className="text-right">Conquistas 🏆</span>
-                    <span className="text-center">⏱️</span>
+                    <span className="text-center">Tempo ⏱️</span>
                   </div>
 
                   {displayRanking.map((entry, index) => (
