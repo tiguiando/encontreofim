@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 
 type Cell = { col: number; row: number };
+type Locale = "pt" | "en";
 
 type SecretType = "heart" | "boss" | "alien" | "ace" | "jackpot" | "bandit";
 
@@ -107,7 +108,7 @@ const HINT_CARD_EMOJI: Record<HintEnvelopeId, string> = {
   memory: "💌",
 };
 
-const FINAL_MESSAGES = [
+const FINAL_MESSAGES_PT = [
   "Lenda absoluta. Menos de 10 segundos? Isso foi humilhante pro Desenvolvedor",
   "Você não jogou. Você executou uma operação tática.",
   "O tesouro devia estar arrependido de ter se escondido.",
@@ -143,6 +144,42 @@ const FINAL_MESSAGES = [
   "Vitória confirmada. Dignidade em análise.",
 ];
 
+const FINAL_MESSAGES_EN = [
+  "Absolute legend. Under 10 seconds? That was humiliating for the Developer.",
+  "You did not play. You executed a tactical operation.",
+  "The treasure should regret ever hiding.",
+  "Absurd speed. The map barely had time to breathe.",
+  "Surgical. You and the treasure clearly had a scheduled meeting.",
+  "Very strong. The game expected more chances.",
+  "World class. That was a lesson.",
+  "Excellent time. You clearly have a nose for treasure.",
+  "Very well done. The treasure blinked and lost.",
+  "You were fast. Fast enough to annoy everyone still on level 1.",
+  "Nice. This time is worth sharing with no shame at all.",
+  "Solid performance. The treasure tried, but not very hard.",
+  "Well done. Nothing legendary, but still respectable.",
+  "You finished with style. The timer was not too offended.",
+  "Okay... now things are getting interesting.",
+  "Not bad... not fast, but not a documentary either.",
+  "It took a while, but you got there. And that counts.",
+  "Honest victory. No rush, no glory, but a victory.",
+  "What matters is that you found it. Eventually.",
+  "It was almost a trilogy, but it ended well.",
+  "This was enough time for the treasure to rethink its life.",
+  "Honestly, grandma showed more initiative today.",
+  "You won, but the timer left laughing.",
+  "All good... just do not put this on your resume.",
+  "The hunt became a stroll. A very long stroll.",
+  "The treasure was considering surrendering on its own.",
+  "If there were a fine for delay, you would get a bill today.",
+  "Grandma stopped by, found it, and still made coffee.",
+  "Congrats, I guess. The treasure almost retired first.",
+  "You found it, but the map was starting to feel sorry for you.",
+  "It took so long the treasure earned interest.",
+  "Official result: even grandma was faster today.",
+  "Victory confirmed. Dignity under review.",
+];
+
 const FIREWORKS = ["🎆", "🎇", "✨", "🎉"];
 const LIGHTNING_EMOJIS = ["⚡", "⚡", "⚡"];
 const FOOD_EMOJIS = ["🍕", "🍔", "🍟"];
@@ -164,19 +201,315 @@ const FIM_PATTERN = [
   "100000101000001",
 ];
 
-const INSTRUCTIONS_LINES = [
-  "Sua mente está presa em uma caixa",
-  "Para sair, siga os sinais no topo da tela e encontre o tesouro no último nivel",
-  "Existem segredos escondidos entre os reinos",
-  "Sequências em CLICK entre os níveis podem desbloquear passagens secretas",
-  "DEVon distribuiu cartas no nível 2 como quem deixa migalhas para os perdidos",
-  "Avance com cautela, esse é um campo minado",
-  "Sua jornada pode ser repleta de conquistas",
-  "Jogar MAIS UMA VEZ não apaga suas conquistas",
-  "Apenas quem tem 5 conquistas é digno do fim",
-  "O fim nem sempre é o fim",
-  "BOA SORTE!",
-];
+
+const INSTRUCTIONS_LINES: Record<Locale, string[]> = {
+  pt: [
+    "Sua mente está presa em uma caixa",
+    "Para sair, siga os sinais no topo da tela e encontre o tesouro no último nivel",
+    "Existem segredos escondidos entre os reinos",
+    "Sequências em CLICK entre os níveis podem desbloquear passagens secretas",
+    "DEVon distribuiu cartas no nível 2 como quem deixa migalhas para os perdidos",
+    "Avance com cautela, esse é um campo minado",
+    "Sua jornada pode ser repleta de conquistas",
+    "Jogar MAIS UMA VEZ não apaga suas conquistas",
+    "Apenas quem tem 5 conquistas é digno do fim",
+    "O fim nem sempre é o fim",
+    "BOA SORTE!",
+  ],
+  en: [
+    "Your mind is trapped inside a box",
+    "To escape, follow the signs at the top of the screen and find the treasure in the last level",
+    "There are secrets hidden between the kingdoms",
+    "CLICK sequences across levels can unlock secret passages",
+    "DEVon scattered cards in level 2 like breadcrumbs for the lost",
+    "Move carefully, this is a minefield",
+    "Your journey can be full of achievements",
+    "Playing ONE MORE TIME does not erase your achievements",
+    "Only those with 5 achievements are worthy of the end",
+    "The end is not always the end",
+    "GOOD LUCK!",
+  ],
+};
+
+const UI_TEXT: Record<Locale, Record<string, string>> = {
+  pt: {
+    season: "Season 1",
+    title: "Encontre o FIM",
+    subtitle: "Desbloqueie os coletáveis para subir no ranking",
+    introSeason: "SEASON 1: THE VOID",
+    start: "Começar",
+    guide: "Guia",
+    ranking: "Ranking",
+    yourNameUpper: "SEU NOME",
+    yourName: "Seu nome",
+    instructions: "Instruções",
+    clickAnywhere: "Clique em qualquer lugar para sair",
+    rankingHeadline: "Você não está sozinho! Aqui suas conquistas valem mais do que o tempo.",
+    globalRanking: "🏆 Ranking Global",
+    close: "Fechar",
+    nobodyEscaped: "Ninguém escapou ainda.",
+    player: "Jogador 🎮",
+    achievements: "Conquistas 🏆",
+    time: "Tempo ⏱️",
+    attemptsLeft: "Tentativas restantes",
+    timeLabel: "Tempo",
+    hintLabel: "Dica",
+    clickAnyBlock: "Clique em algum bloco",
+    nextLevel: "Ir para o próximo nível",
+    playSecret: "Jogar fase secreta",
+    faceBoss: "Enfrentar BOSS",
+    enterArea51: "Entrar na AREA 51",
+    flipAce: "Virar a carta ACE",
+    betJackpot: "Apostar no JACKPOT",
+    huntBandit: "Caçar o GOLPISTA",
+    oneMoreTime: "MAIS UMA VEZ!",
+    shareResult: "Compartilhar resultado",
+    saveRanking: "SALVAR RANKING",
+    rankingSaved: "RANKING SALVO",
+    foundTreasure: "🎉 Você encontrou o tesouro!",
+    playersOnline: "Jogadores online",
+    openGuide: "Abrir guia",
+    openRanking: "Abrir ranking",
+    soundOn: "Desativar som",
+    soundOff: "Ativar som",
+    attemptsOver: "Suas tentativas acabaram.",
+    bombClicked: "Você clicou em uma bomba.",
+    sequence3: "3 níveis em sequência",
+    finalTime: "Tempo final",
+    wonLevel: "Você venceu o",
+    trollActive: "Modo troll ativo: as dicas estão invertidas. CORRA!!!",
+    reachedHereIn: "vc chegou aqui em",
+    respectDev: "voce tem o meu respeito. DEV",
+    helpDev: "HELP the DEV",
+    invalidName: "Nome inválido 🚫",
+    bestRankingAlreadyBetter: "SEU MELHOR RANKING JÁ É MELHOR",
+    currentRunWorse: "Seu registro atual não superou sua melhor run.",
+    youAreRank: "VOCÊ É O #",
+    inRanking: " NO RANKING",
+    enteredRanking: "VOCÊ ENTROU NO RANKING",
+    rankingSavedFlash: "Ranking salvo.",
+    rankingSaveError: "Erro ao salvar ranking.",
+    turtlePassed: "🐢 Você foi ultrapassado por uma tartaruga.",
+    knock: "TOC TOC",
+    bossDamage: "Tomou dano do boss. -1 chance.",
+    trollTimeUp: "🧠 O tempo do modo troll acabou.",
+    trollActivated: "Modo troll ativado. As dicas agora mentem. CORRA!!!",
+    easter1: "eu sei o que voce procura!",
+    easter2: "seu safadinho, nao tem nada aqui!",
+    easter3: "esse conteudo foi removido em virtude da lei felca de 2026.",
+    dieOffTable: "O dado rolou fora da mesa.",
+    dieResult: "O dado rolou e o resultado foi",
+    secretUnlocked: "voce desbloqueou uma fase secreta, conclua os niveis para prosseguir.",
+    noRepeat: "Isso não vai funcionar… mas continua tentando (TDAH).",
+    beside: "Era literalmente ao lado…",
+    foundDie: "Você encontrou um dado.",
+    giftReleased: "Um presente foi liberado.",
+    gameOver: "GAME OVER",
+    bossFound: "Você me encontrou, seu humano medíocre.",
+    alienFound: "Sinais detectados. Permaneça calmo, humano.",
+    aceFound: "A mesa foi aberta. Veja se você tem cartas para isso.",
+    jackpotFound: "O brilho aumentou. Talvez a casa nao esteja tao segura.",
+    banditFound: "Ajude a encontrar o golpista e coloque ele atrás das grades.",
+    hiddenHeart: "Encontre o coração escondido",
+    hiddenSkull: "Encontre a caveira escondida",
+    hiddenAlien: "Encontre o alien escondido",
+    hiddenAce: "Encontre o ás escondido",
+    hiddenGlow: "Encontre o brilho dourado",
+    hiddenBandit: "Encontre o golpista antes que ele fuja",
+    congratsHeart: "❤️ Parabéns. Meu coração agora é seu!",
+    dev: "Dev",
+    bossWin1: "💀 Eu jamais pensei que seria derrotado por um insolente como você...",
+    bossWin2: "Mas desta vez, você venceu.",
+    alienWin: "👽 BUSQUE CONHECIMENTO...",
+    aceWin1: "♠ Você puxou exatamente a carta certa.",
+    aceWin2: "Hoje o baralho jogou a seu favor.",
+    jackpotWin1: "🎰 JACKPOT. Hoje a casa perdeu.",
+    jackpotWin2: "As moedas escolheram você.",
+    banditWin1: "👤 O golpista foi encontrado.",
+    banditWin2: "Agora ele ficou atras das grades.",
+    bossLose: "💀 Volte para o seu Fortnite, seu verme.",
+    alienLose: "👽 Depois que eu roubar todas as vacas da Terra... volto para te abduzir.",
+    aceLose1: "♠ Você blefou mal.",
+    aceLose2: "A casa levou essa mão.",
+    jackpotLose: "🎰 Quase. O jackpot escapou dessa vez.",
+    banditLose: "🚨 O golpista passou por entre as grades.",
+    finalPhraseSpeed: "Você correu mais rápido que o tempo.",
+    finalPhraseSlow: "Você aproveitou cada passo.",
+    finalPhraseBoss: "Você enfrentou o fim… e venceu.",
+    finalPhraseAlien: "Você descobriu o que não deveria.",
+    finalPhraseHeart: "Você sentiu o jogo.",
+    finalPhraseAce: "Você dominou tudo.",
+    finalPhraseJackpot: "Hoje a casa perdeu. O brilho ficou com você.",
+    finalPhraseBandit: "Você pegou o golpista e fechou as grades.",
+    finalPhraseBrain: "Você não venceu o jogo… você entendeu ele.",
+    finalPhraseDefault: "Você reuniu os segredos. Agora é só celebrar e compartilhar.",
+    shareIntro: "Eu joguei o jogo Encontre o FIM...",
+    shareFastest: "Sequência mais rápida",
+    shareAchievements: "Conquistas",
+    shareFim: "E ENCONTREI O FIM!!!",
+    shareCopied: "Resultado copiado para a área de transferência.",
+    shareError: "Não foi possível compartilhar agora.",
+    footerSeason: "SEASON 1 - THE VOID",
+    bossSearching: "Você está procurando… ou sendo observado?",
+    helpDevFooter: "HELP the DEV",
+    key: "Chave",
+    rollDie: "Rolar dado",
+    readHint: "Ler dica",
+  },
+  en: {
+    season: "Season 1",
+    title: "Find the END",
+    subtitle: "Unlock collectibles to climb the ranking",
+    introSeason: "SEASON 1: THE VOID",
+    start: "Start",
+    guide: "Guide",
+    ranking: "Ranking",
+    yourNameUpper: "YOUR NAME",
+    yourName: "Your name",
+    instructions: "Instructions",
+    clickAnywhere: "Click anywhere to close",
+    rankingHeadline: "You are not alone! Here your achievements matter more than time.",
+    globalRanking: "🏆 Global Ranking",
+    close: "Close",
+    nobodyEscaped: "Nobody has escaped yet.",
+    player: "Player 🎮",
+    achievements: "Achievements 🏆",
+    time: "Time ⏱️",
+    attemptsLeft: "Attempts left",
+    timeLabel: "Time",
+    hintLabel: "Hint",
+    clickAnyBlock: "Click any block",
+    nextLevel: "Go to next level",
+    playSecret: "Play secret stage",
+    faceBoss: "Face the BOSS",
+    enterArea51: "Enter AREA 51",
+    flipAce: "Flip the ACE card",
+    betJackpot: "Bet on JACKPOT",
+    huntBandit: "Hunt the BANDIT",
+    oneMoreTime: "ONE MORE TIME!",
+    shareResult: "Share result",
+    saveRanking: "SAVE RANKING",
+    rankingSaved: "RANKING SAVED",
+    foundTreasure: "🎉 You found the treasure!",
+    playersOnline: "Players online",
+    openGuide: "Open guide",
+    openRanking: "Open ranking",
+    soundOn: "Turn sound off",
+    soundOff: "Turn sound on",
+    attemptsOver: "Your attempts are over.",
+    bombClicked: "You clicked on a bomb.",
+    sequence3: "3 levels in sequence",
+    finalTime: "Final time",
+    wonLevel: "You beat",
+    trollActive: "Troll mode active: the hints are inverted. RUN!!!",
+    reachedHereIn: "you got here in",
+    respectDev: "you have my respect. DEV",
+    helpDev: "HELP the DEV",
+    invalidName: "Invalid name 🚫",
+    bestRankingAlreadyBetter: "YOUR BEST RANKING IS ALREADY BETTER",
+    currentRunWorse: "Your current record did not beat your best run.",
+    youAreRank: "YOU ARE #",
+    inRanking: " IN THE RANKING",
+    enteredRanking: "YOU ENTERED THE RANKING",
+    rankingSavedFlash: "Ranking saved.",
+    rankingSaveError: "Error saving ranking.",
+    turtlePassed: "🐢 You were overtaken by a turtle.",
+    knock: "KNOCK KNOCK",
+    bossDamage: "The boss hit you. -1 chance.",
+    trollTimeUp: "🧠 Troll mode time is over.",
+    trollActivated: "Troll mode activated. Hints now lie. RUN!!!",
+    easter1: "I know what you are looking for!",
+    easter2: "you kinky, there is nothing here!",
+    easter3: "only available at the Epstein files.",
+    dieOffTable: "The die rolled off the table.",
+    dieResult: "The die rolled and the result was",
+    secretUnlocked: "you unlocked a secret stage, finish the levels to proceed.",
+    noRepeat: "That will not work… but keep trying (ADHD).",
+    beside: "It was literally right next to it…",
+    foundDie: "You found a die.",
+    giftReleased: "A gift has been unlocked.",
+    gameOver: "GAME OVER",
+    bossFound: "You found me, pathetic human.",
+    alienFound: "Signals detected. Remain calm, human.",
+    aceFound: "The table is open. Let's see if you have the cards for it.",
+    jackpotFound: "The glow has intensified. Maybe the house is not that safe anymore.",
+    banditFound: "Help find the bandit and put him behind bars.",
+    hiddenHeart: "Find the hidden heart",
+    hiddenSkull: "Find the hidden skull",
+    hiddenAlien: "Find the hidden alien",
+    hiddenAce: "Find the hidden ace",
+    hiddenGlow: "Find the golden glow",
+    hiddenBandit: "Find the bandit before he escapes",
+    congratsHeart: "❤️ Congratulations. My heart is now yours!",
+    dev: "Dev",
+    bossWin1: "💀 I never thought I would be defeated by an insolent creature like you...",
+    bossWin2: "But this time, you won.",
+    alienWin: "👽 SEEK KNOWLEDGE...",
+    aceWin1: "♠ You pulled exactly the right card.",
+    aceWin2: "Today the deck played in your favor.",
+    jackpotWin1: "🎰 JACKPOT. Today the house lost.",
+    jackpotWin2: "The coins chose you.",
+    banditWin1: "👤 The bandit has been found.",
+    banditWin2: "Now he is behind bars.",
+    bossLose: "💀 Go back to your Fortnite, worm.",
+    alienLose: "👽 After I steal all of Earth's cows... I will come back to abduct you.",
+    aceLose1: "♠ You bluffed badly.",
+    aceLose2: "The house took this hand.",
+    jackpotLose: "🎰 Close. The jackpot escaped this time.",
+    banditLose: "🚨 The bandit slipped through the bars.",
+    finalPhraseSpeed: "You ran faster than time.",
+    finalPhraseSlow: "You savored every step.",
+    finalPhraseBoss: "You faced the end… and won.",
+    finalPhraseAlien: "You discovered what you should not have.",
+    finalPhraseHeart: "You felt the game.",
+    finalPhraseAce: "You mastered everything.",
+    finalPhraseJackpot: "Today the house lost. The glow stayed with you.",
+    finalPhraseBandit: "You caught the bandit and shut the bars.",
+    finalPhraseBrain: "You did not beat the game… you understood it.",
+    finalPhraseDefault: "You gathered the secrets. Now celebrate and share.",
+    shareIntro: "I played the game Find the END...",
+    shareFastest: "Fastest sequence",
+    shareAchievements: "Achievements",
+    shareFim: "AND I FOUND THE END!!!",
+    shareCopied: "Result copied to the clipboard.",
+    shareError: "Could not share right now.",
+    footerSeason: "SEASON 1 - THE VOID",
+    bossSearching: "Are you searching… or being watched?",
+    helpDevFooter: "HELP the DEV",
+    key: "Key",
+    rollDie: "Roll die",
+    readHint: "Read hint",
+  },
+};
+
+function t(locale: Locale, key: string) {
+  return UI_TEXT[locale]?.[key] ?? key;
+}
+
+function getLocalizedLevelName(level: LevelConfig, locale: Locale) {
+  if (locale === "pt") return level.name;
+  if (level.id === 1) return "Level 1";
+  if (level.id === 2) return "Level 2";
+  if (level.id === 3) return "Level 3";
+  if (level.id === 4) return "Secret Stage";
+  if (level.id === 9) return "BANDIT";
+  return level.name;
+}
+
+function getLocalizedHintText(id: HintEnvelopeId, locale: Locale) {
+  if (locale === "pt") return HINT_TEXTS[id];
+  const map: Record<HintEnvelopeId, string> = {
+    heart: "The last shall always be first",
+    alien: "Do you believe in aliens? I saw one in Area 51 between the first and second village",
+    boss: "Evil has its own number divided around the world",
+    ace: "This game is AAA, to me it will always be number 1!",
+    jackpot: "I always play my lucky number to hit the jackpot",
+    bandit: "careful, there is a scammer hidden across all regions",
+    memory: "I am forgetful, I like repeating the name of the game several times so it sticks in my head",
+  };
+  return map[id];
+}
+
 
 function invertDirection(direction: string) {
   const vertical =
@@ -199,13 +532,14 @@ function formatTime(seconds: number) {
   return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
 
-function getFinalMessage(totalSeconds: number) {
-  if (totalSeconds < 10) return FINAL_MESSAGES[0];
+function getFinalMessage(totalSeconds: number, locale: Locale) {
+  const messages = locale === "pt" ? FINAL_MESSAGES_PT : FINAL_MESSAGES_EN;
+  if (totalSeconds < 10) return messages[0];
   const index = Math.min(
-    FINAL_MESSAGES.length - 1,
+    messages.length - 1,
     1 + Math.floor((totalSeconds - 10) / 3)
   );
-  return FINAL_MESSAGES[index];
+  return messages[index];
 }
 
 function cellKey(cell: Cell) {
@@ -669,17 +1003,17 @@ function getFinalThemeEmojis(theme: FinalThemeId) {
   return [];
 }
 
-function getFinalThemePhrase(theme: FinalThemeId) {
-  if (theme === "speed") return "Você correu mais rápido que o tempo.";
-  if (theme === "slow") return "Você aproveitou cada passo.";
-  if (theme === "boss") return "Você enfrentou o fim… e venceu.";
-  if (theme === "alien") return "Você descobriu o que não deveria.";
-  if (theme === "heart") return "Você sentiu o jogo.";
-  if (theme === "ace") return "Você dominou tudo.";
-  if (theme === "jackpot") return "Hoje a casa perdeu. O brilho ficou com você.";
-  if (theme === "bandit") return "Você pegou o golpista e fechou as grades.";
-  if (theme === "brain") return "Você não venceu o jogo… você entendeu ele.";
-  return "Você reuniu os segredos. Agora é só celebrar e compartilhar.";
+function getFinalThemePhrase(theme: FinalThemeId, locale: Locale) {
+  if (theme === "speed") return t(locale, "finalPhraseSpeed");
+  if (theme === "slow") return t(locale, "finalPhraseSlow");
+  if (theme === "boss") return t(locale, "finalPhraseBoss");
+  if (theme === "alien") return t(locale, "finalPhraseAlien");
+  if (theme === "heart") return t(locale, "finalPhraseHeart");
+  if (theme === "ace") return t(locale, "finalPhraseAce");
+  if (theme === "jackpot") return t(locale, "finalPhraseJackpot");
+  if (theme === "bandit") return t(locale, "finalPhraseBandit");
+  if (theme === "brain") return t(locale, "finalPhraseBrain");
+  return t(locale, "finalPhraseDefault");
 }
 
 function getFinalBoardEmoji(row: number, col: number, theme: FinalThemeId) {
@@ -896,6 +1230,7 @@ export default function Home() {
   const [rankingPositionMessage, setRankingPositionMessage] = useState("");
   const [showRankingModal, setShowRankingModal] = useState(false);
   const [showInstructions, setShowInstructions] = useState(false);
+  const [locale, setLocale] = useState<Locale>("pt");
 
   const [dieCell, setDieCell] = useState<Cell | null>(null);
   const [hasDie, setHasDie] = useState(false);
@@ -1026,7 +1361,7 @@ export default function Home() {
       }
     }
 
-    const fullText = "SEASON 1: THE VOID";
+    const fullText = t(locale, "introSeason");
     let index = 0;
 
     setShowIntro(true);
@@ -1090,7 +1425,7 @@ export default function Home() {
 
     const elapsed = Math.floor((Date.now() - mainRunStartRef.current) / 1000);
     setMainRunFinishedSeconds(elapsed);
-    setMainRunFinishedMessage((prev) => prev || getFinalMessage(elapsed));
+    setMainRunFinishedMessage((prev) => prev || getFinalMessage(elapsed, locale));
   }
 
   function resetSecretRunTimer() {
@@ -1125,7 +1460,7 @@ export default function Home() {
   const displayRanking = useMemo(() => ranking.slice(0, 150), [ranking]);
 
   const finalTheme = useMemo(() => getFinalThemeReward(collectedRewards), [collectedRewards]);
-  const finalThemePhrase = useMemo(() => getFinalThemePhrase(finalTheme), [finalTheme]);
+  const finalThemePhrase = useMemo(() => getFinalThemePhrase(finalTheme, locale), [finalTheme, locale]);
 
   const boardGapClass = isMobile ? "gap-1" : "gap-2";
   const boardPaddingClass = isMobile ? "p-2" : "p-3";
@@ -1402,7 +1737,7 @@ export default function Home() {
     if (containsBlockedWord(trimmedName) || maskedName !== trimmedName || !isNameValid(trimmedName)) {
       const safeMaskedName = maskedName.slice(0, 12);
       setPlayerName(safeMaskedName);
-      flashStatus("Nome inválido 🚫");
+      flashStatus(t(locale, "invalidName"));
       return;
     }
 
@@ -1421,8 +1756,8 @@ export default function Home() {
 
     if (currentBestForPlayer && !isBetterRankingEntry(candidateEntry, currentBestForPlayer)) {
       setRankingSaved(true);
-      setRankingPositionMessage("SEU MELHOR RANKING JÁ É MELHOR");
-      flashStatus("Seu registro atual não superou sua melhor run.");
+      setRankingPositionMessage(t(locale, "bestRankingAlreadyBetter"));
+      flashStatus(t(locale, "currentRunWorse"));
       return;
     }
 
@@ -1445,7 +1780,7 @@ export default function Home() {
 
       if (!res.ok) {
         const errorMessage =
-          typeof payload?.error === "string" ? payload.error : "Erro ao salvar ranking";
+          typeof payload?.error === "string" ? payload.error : t(locale, "rankingSaveError");
         flashStatus(errorMessage);
         if (errorMessage.toLowerCase().includes("nome inválido")) {
           setPlayerName(maskBlockedWords(trimmedName));
@@ -1460,15 +1795,15 @@ export default function Home() {
       );
 
       if (position >= 0) {
-        setRankingPositionMessage(`VOCÊ É O #${position + 1} NO RANKING`);
+        setRankingPositionMessage(`${t(locale, "youAreRank")}${position + 1}${t(locale, "inRanking")}`);
       } else {
-        setRankingPositionMessage("VOCÊ ENTROU NO RANKING");
+        setRankingPositionMessage(t(locale, "enteredRanking"));
       }
 
       setRankingSaved(true);
-      flashStatus("Ranking salvo.");
+      flashStatus(t(locale, "rankingSavedFlash"));
     } catch {
-      flashStatus("Erro ao salvar ranking.");
+      flashStatus(t(locale, "rankingSaveError"));
     }
   }
 
@@ -1669,6 +2004,19 @@ export default function Home() {
 
     window.localStorage.setItem("encontreofim-player-name", safeName);
   }, [playerName]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const savedLocale = window.localStorage.getItem("encontreofim-locale");
+    if (savedLocale === "pt" || savedLocale === "en") {
+      setLocale(savedLocale);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem("encontreofim-locale", locale);
+  }, [locale]);
 
   useEffect(() => {
     function updateViewport() {
@@ -1972,7 +2320,7 @@ export default function Home() {
         turtleTriggeredRef.current = true;
         addReward("slow");
         turtleRunActiveRef.current = false;
-        flashStatus("🐢 Você foi ultrapassado por uma tartaruga.");
+        flashStatus(t(locale, "turtlePassed"));
       }
     }, 250);
 
@@ -1988,7 +2336,7 @@ export default function Home() {
       const sinceLastKnock = now - lastKnockRef.current;
 
       if (idleFor >= IDLE_KNOCK_MS && sinceLastKnock >= IDLE_KNOCK_MS) {
-        flashIdle("TOC TOC");
+        flashIdle(t(locale, "knock"));
         lastKnockRef.current = now;
       }
     }, 500);
@@ -2022,7 +2370,7 @@ export default function Home() {
         setBossDamageFlash(true);
         playSound(hitSoundRef);
         window.setTimeout(() => setBossDamageFlash(false), 100);
-        flashStatus("Tomou dano do boss. -1 chance.");
+        flashStatus(t(locale, "bossDamage"));
         lastBossActionRef.current = Date.now();
       }
     }, 250);
@@ -2076,7 +2424,7 @@ export default function Home() {
       setTrollSecondsLeft(remaining);
 
       if (remaining <= 0) {
-        flashStatus("🧠 O tempo do modo troll acabou.");
+        flashStatus(t(locale, "trollTimeUp"));
         resetGame();
       }
     };
@@ -2127,7 +2475,7 @@ export default function Home() {
     if (next >= 5 && !trollMode) {
       setTrollMode(true);
       startTrollRun();
-      flashStatus("Modo troll ativado. As dicas agora mentem. CORRA!!!");
+      flashStatus(t(locale, "trollActivated"));
     }
   }
 
@@ -2138,7 +2486,7 @@ export default function Home() {
   }
 
   function handleHintCardClick(id: HintEnvelopeId) {
-    flashStatus(HINT_TEXTS[id]);
+    flashStatus(getLocalizedHintText(id, locale));
   }
 
   function shouldKeepHintCard(id: HintEnvelopeId) {
@@ -2168,9 +2516,9 @@ export default function Home() {
 
     if (isNinth && step === 1) {
       const messages: Record<number, string> = {
-        1: "eu sei o que voce procura!",
-        2: "seu safadinho, nao tem nada aqui!",
-        3: "esse conteudo foi removido em virtude da lei felca de 2026.",
+        1: t(locale, "easter1"),
+        2: t(locale, "easter2"),
+        3: t(locale, "easter3"),
       };
 
       setSixNineDone((prev) => [...prev, levelId]);
@@ -2229,13 +2577,13 @@ export default function Home() {
 
     const unlucky = Math.random() < 0.01;
     if (unlucky) {
-      flashSignal("O dado rolou fora da mesa.");
+      flashSignal(t(locale, "dieOffTable"));
       return;
     }
 
     const result = Math.floor(Math.random() * 6) + 1;
     playSound(diceSoundRef);
-    flashSignal(`O dado rolou e o resultado foi ${result}.`);
+    flashSignal(`${t(locale, "dieResult")} ${result}.`);
 
     const revealable = getRevealableCells();
     if (revealable.length === 0) return;
@@ -2257,7 +2605,7 @@ export default function Home() {
 
   function completeSecretUnlock(levelId: number, setter: (value: boolean) => void) {
     setter(true);
-    flashStatus("voce desbloqueou uma fase secreta, conclua os niveis para prosseguir.");
+    flashStatus(t(locale, "secretUnlocked"));
     setUnlockedLevels((prev) => (prev.includes(levelId) ? prev : [...prev, levelId]));
   }
 
@@ -2307,7 +2655,7 @@ export default function Home() {
     const easterEggRepeatAllowed = !level.isSecret && isEasterEggTriggerCell(currentLevel, cell);
 
     if (clickedCells.includes(key) && !clickedLock && !easterEggRepeatAllowed) {
-      flashStatus("Isso não vai funcionar… mas continua tentando (TDAH).");
+      flashStatus(t(locale, "noRepeat"));
       return;
     }
 
@@ -2322,7 +2670,7 @@ export default function Home() {
       setClickedCells((prev) => [...prev, key]);
       setGameOver(true);
       setHint("");
-      setStatusMessage("GAME OVER");
+      setStatusMessage(t(locale, "gameOver"));
       turtleRunActiveRef.current = false;
       turtleTriggeredRef.current = false;
       return;
@@ -2351,7 +2699,7 @@ export default function Home() {
         );
 
         playSound(letterSoundRef);
-        flashStatus(envelope.text);
+        flashStatus(getLocalizedHintText(envelope.id, locale));
         setHint(getDirection(cell, treasure, level.cols, level.rows, trollMode));
 
         const distance = Math.abs(cell.col - treasure.col) + Math.abs(cell.row - treasure.row);
@@ -2359,7 +2707,7 @@ export default function Home() {
         setClicks((c) => c + 1);
 
         if (!triggeredSecretMessage && clicks + 1 >= MAX_CLICKS && distance === 1) {
-          flashStatus("Era literalmente ao lado…");
+          flashStatus(t(locale, "beside"));
         }
         return;
       }
@@ -2378,10 +2726,10 @@ export default function Home() {
         const distance = Math.abs(cell.col - treasure.col) + Math.abs(cell.row - treasure.row);
         const nextClicks = clicks + 1;
 
-        flashStatus("Você encontrou um dado.");
+        flashStatus(t(locale, "foundDie"));
 
         if (!triggeredSecretMessage && nextClicks >= MAX_CLICKS && distance === 1) {
-          flashStatus("Era literalmente ao lado…");
+          flashStatus(t(locale, "beside"));
         }
 
         setClicks((c) => c + 1);
@@ -2406,7 +2754,7 @@ export default function Home() {
         const nextClicks = clicks + 1;
 
         if (!triggeredSecretMessage && nextClicks >= MAX_CLICKS && distance === 1) {
-          flashStatus("Era literalmente ao lado…");
+          flashStatus(t(locale, "beside"));
         } else if (!triggeredSecretMessage) {
           setStatusMessage("");
         }
@@ -2425,7 +2773,7 @@ export default function Home() {
       setRevealedKeyCell(null);
       addReward("gift");
       flashSignal("CLICK");
-      flashStatus("Um presente foi liberado.");
+      flashStatus(t(locale, "giftReleased"));
       return;
     }
 
@@ -2655,9 +3003,9 @@ export default function Home() {
       if (unlockedSecretThisClick || triggeredSecretMessage) {
         // mantém a mensagem secreta visível
       } else if (nextClicks >= MAX_CLICKS && distance === 1) {
-        flashStatus("Era literalmente ao lado…");
+        flashStatus(t(locale, "beside"));
       } else if (level.secretType === "boss" && nextClicks >= 3) {
-        flashStatus("Você está procurando… ou sendo observado?");
+        flashStatus(t(locale, "bossSearching"));
       } else {
         setStatusMessage("");
       }
@@ -2693,31 +3041,31 @@ export default function Home() {
     const shareMainTime = mainRunFinishedSeconds ?? totalElapsed;
     const rewardsLine =
       collectedRewards.length > 0
-        ? `\nConquistas: ${collectedRewards.map((reward) => reward.emoji).join(" ")}`
+        ? `\n${t(locale, "shareAchievements")}: ${collectedRewards.map((reward) => reward.emoji).join(" ")}`
         : "";
     const reachedFim =
       finalCelebration ||
       collectedRewards.length >= 5 ||
       fimUnlocked;
     const fimLine = reachedFim
-      ? "\nE ENCONTREI O FIM!!!"
+      ? `\n${t(locale, "shareFim")}`
       : "";
 
-    const text = `Eu joguei o jogo Encontre o FIM...\nSequência mais rápida: ${formatTime(shareMainTime)}${rewardsLine}${fimLine}\n\n${SHARE_LINK}`;
+    const text = `${t(locale, "shareIntro")}\n${t(locale, "shareFastest")}: ${formatTime(shareMainTime)}${rewardsLine}${fimLine}\n\n${SHARE_LINK}`;
 
     try {
       if (navigator.share) {
         await navigator.share({
-          title: "Encontre o FIM",
+          title: t(locale, "title"),
           text,
         });
       } else {
         await navigator.clipboard.writeText(text);
-        setShareMessage("Resultado copiado para a área de transferência.");
+        setShareMessage(t(locale, "shareCopied"));
         setTimeout(() => setShareMessage(""), 2500);
       }
     } catch {
-      setShareMessage("Não foi possível compartilhar agora.");
+      setShareMessage(t(locale, "shareError"));
       setTimeout(() => setShareMessage(""), 2500);
     }
   }
@@ -3039,10 +3387,10 @@ export default function Home() {
       {!audioUnlocked && (
         <div className="fixed inset-0 z-[130] bg-black/95 flex items-center justify-center px-6">
           <div className="w-full max-w-md rounded-3xl border border-white/10 bg-zinc-950/90 backdrop-blur-xl shadow-2xl px-6 py-8 text-center">
-            <p className="text-[11px] sm:text-xs tracking-[0.35em] uppercase text-zinc-500 mb-3">Season 1</p>
-            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3">Encontre o FIM</h2>
+            <p className="text-[11px] sm:text-xs tracking-[0.35em] uppercase text-zinc-500 mb-3">{t(locale, "season")}</p>
+            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3">{t(locale, "title")}</h2>
             <p className="text-zinc-400 text-sm sm:text-base mb-6">
-              Desbloqueie os coletáveis para subir no ranking
+              {t(locale, "subtitle")}
             </p>
 
             <div className="mb-5">
@@ -3053,10 +3401,29 @@ export default function Home() {
                   const maskedValue = maskBlockedWords(nextValue);
                   setPlayerName(maskedValue);
                 }}
-                placeholder="SEU NOME"
+                placeholder={t(locale, "yourNameUpper")}
                 maxLength={12}
                 className="w-full px-4 py-3 rounded-2xl bg-zinc-900 border border-zinc-700 text-white text-center outline-none focus:border-amber-400 text-sm sm:text-base"
               />
+            </div>
+
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <button
+                onClick={() => setLocale("pt")}
+                className={`px-3 py-2 rounded-xl border transition text-2xl ${locale === "pt" ? "bg-amber-400 text-black border-amber-300 scale-110" : "bg-zinc-900 text-white border-zinc-700 hover:bg-zinc-800 opacity-70"}`}
+                aria-label="Português"
+                title="Português"
+              >
+                🇧🇷
+              </button>
+              <button
+                onClick={() => setLocale("en")}
+                className={`px-3 py-2 rounded-xl border transition text-2xl ${locale === "en" ? "bg-amber-400 text-black border-amber-300 scale-110" : "bg-zinc-900 text-white border-zinc-700 hover:bg-zinc-800 opacity-70"}`}
+                aria-label="English"
+                title="English"
+              >
+                🇺🇸
+              </button>
             </div>
 
             <div className="flex items-center justify-center gap-3">
@@ -3064,14 +3431,14 @@ export default function Home() {
                 onClick={startGameExperience}
                 className="px-5 py-3 rounded-2xl bg-amber-400 hover:bg-amber-300 text-black font-semibold transition"
               >
-                Começar
+                {t(locale, "start")}
               </button>
 
               <button
                 onClick={() => setShowInstructions(true)}
                 className="w-12 h-12 rounded-2xl border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 text-xl transition"
-                aria-label="Guia"
-                title="Guia"
+                aria-label={t(locale, "guide")}
+                title={t(locale, "guide")}
               >
                 📖
               </button>
@@ -3079,8 +3446,8 @@ export default function Home() {
               <button
                 onClick={() => setSoundEnabled((prev) => !prev)}
                 className="w-12 h-12 rounded-2xl border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 text-xl transition"
-                aria-label="Alternar som"
-                title="Alternar som"
+                aria-label={soundEnabled ? t(locale, "soundOn") : t(locale, "soundOff")}
+                title={soundEnabled ? t(locale, "soundOn") : t(locale, "soundOff")}
               >
                 {soundEnabled ? "🔊" : "🔇"}
               </button>
@@ -3088,8 +3455,8 @@ export default function Home() {
               <button
                 onClick={openRankingModal}
                 className="w-12 h-12 rounded-2xl border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 text-xl transition"
-                aria-label="Ver ranking"
-                title="Ranking"
+                aria-label={t(locale, "ranking")}
+                title={t(locale, "ranking")}
               >
                 🏆
               </button>
@@ -3177,15 +3544,15 @@ export default function Home() {
         >
           <div className="w-full max-w-md rounded-2xl border border-zinc-700 bg-zinc-900/95 shadow-2xl px-5 py-5 text-zinc-100">
             <p className="text-[10px] sm:text-xs tracking-[0.28em] uppercase text-zinc-500 mb-3">
-              Instruções
+              {t(locale, "instructions")}
             </p>
             <div className="space-y-3 text-sm sm:text-base leading-relaxed">
-              {INSTRUCTIONS_LINES.map((line) => (
+              {INSTRUCTIONS_LINES[locale].map((line) => (
                 <p key={line}>{line}</p>
               ))}
             </div>
             <p className="mt-4 text-[11px] sm:text-xs text-zinc-500">
-              Clique em qualquer lugar para sair
+              {t(locale, "clickAnywhere")}
             </p>
           </div>
         </div>
@@ -3203,16 +3570,16 @@ export default function Home() {
             <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
               <div>
                 <p className="text-[10px] tracking-[0.22em] text-zinc-400 uppercase">
-                  Você não está sozinho! Aqui suas conquistas valem mais do que o tempo.
+                  {t(locale, "rankingHeadline")}
                 </p>
-                <h2 className="text-base sm:text-lg font-bold mt-1">🏆 Ranking Global</h2>
+                <h2 className="text-base sm:text-lg font-bold mt-1">{t(locale, "globalRanking")}</h2>
               </div>
 
               <button
                 onClick={() => setShowRankingModal(false)}
                 className="w-8 h-8 rounded-full bg-zinc-800 hover:bg-zinc-700 transition text-sm"
-                aria-label="Fechar ranking"
-                title="Fechar"
+                aria-label={t(locale, "close")}
+                title={t(locale, "close")}
               >
                 ✕
               </button>
@@ -3221,14 +3588,14 @@ export default function Home() {
             <div className="p-3 space-y-2 text-[11px] sm:text-xs overflow-y-auto max-h-[calc(82vh-76px)]">
               {displayRanking.length === 0 ? (
                 <div className="px-3 py-4 rounded-xl bg-zinc-800 text-zinc-400 text-center">
-                  Ninguém escapou ainda.
+                  {t(locale, "nobodyEscaped")}
                 </div>
               ) : (
                 <>
                   <div className="grid grid-cols-[minmax(0,1fr)_auto_56px] items-center px-3 pb-1 text-[10px] sm:text-[11px] uppercase tracking-[0.18em] text-zinc-400">
-                    <span className="text-left">Jogador 🎮</span>
-                    <span className="text-right">Conquistas 🏆</span>
-                    <span className="text-center">Tempo ⏱️</span>
+                    <span className="text-left">{t(locale, "player")}</span>
+                    <span className="text-right">{t(locale, "achievements")}</span>
+                    <span className="text-center">{t(locale, "time")}</span>
                   </div>
 
                   {displayRanking.map((entry, index) => (
@@ -3265,7 +3632,7 @@ export default function Home() {
           {finalCelebration
             ? "FIM"
             : level.secretType === "heart"
-              ? "Fase Secreta"
+              ? t(locale, "playSecret")
               : level.secretType === "boss"
                 ? "BOSS"
                 : level.secretType === "alien"
@@ -3275,8 +3642,8 @@ export default function Home() {
                     : level.secretType === "jackpot"
                       ? "JACKPOT"
                       : level.secretType === "bandit"
-                        ? "GOLPISTA"
-                        : "Encontre o FIM"}
+                        ? (locale === "pt" ? "GOLPISTA" : "BANDIT")
+                        : t(locale, "title")}
         </h1>
 
         {!finalCelebration && (
@@ -3316,7 +3683,7 @@ export default function Home() {
                     : "bg-zinc-900 text-zinc-500 border-zinc-800 cursor-not-allowed"
               }`;
 
-              const label = `${completed ? "✅ " : ""}${lvl.name}${!unlocked ? " 🔒" : ""}`;
+              const label = `${completed ? "✅ " : ""}${getLocalizedLevelName(lvl, locale)}${!unlocked ? " 🔒" : ""}`;
 
               if (isMainLevel) {
                 return (
@@ -3347,11 +3714,11 @@ export default function Home() {
 
           {!finalCelebration && (
             <p className={isMobile ? "text-base" : "text-lg"}>
-              Tentativas restantes: {MAX_CLICKS - clicks}
+              {t(locale, "attemptsLeft")}: {MAX_CLICKS - clicks}
             </p>
           )}
 
-          {showTime && <p className={isMobile ? "text-base" : "text-lg"}>Tempo: {formatTime(totalElapsed)}</p>}
+          {showTime && <p className={isMobile ? "text-base" : "text-lg"}>{t(locale, "timeLabel")}: {formatTime(totalElapsed)}</p>}
 
           {!finalCelebration &&
             level.secretType === "boss" &&
@@ -3360,7 +3727,7 @@ export default function Home() {
             !sleepMode &&
             !gameOver && (
               <p className="text-red-300 font-semibold boss-glow text-sm sm:text-base">
-                Você me encontrou, seu humano medíocre.
+                {t(locale, "bossFound")}
               </p>
             )}
 
@@ -3371,7 +3738,7 @@ export default function Home() {
             !sleepMode &&
             !gameOver && (
               <p className="text-green-300 font-semibold alien-glow text-sm sm:text-base">
-                Sinais detectados. Permaneça calmo, humano.
+                {t(locale, "alienFound")}
               </p>
             )}
 
@@ -3382,7 +3749,7 @@ export default function Home() {
             !sleepMode &&
             !gameOver && (
               <p className="text-zinc-200 font-semibold ace-glow text-sm sm:text-base">
-                A mesa foi aberta. Veja se você tem cartas para isso.
+                {t(locale, "aceFound")}
               </p>
             )}
 
@@ -3393,7 +3760,7 @@ export default function Home() {
             !sleepMode &&
             !gameOver && (
               <p className="text-yellow-300 font-semibold text-sm sm:text-base">
-                O brilho aumentou. Talvez a casa nao esteja tao segura.
+                {t(locale, "jackpotFound")}
               </p>
             )}
 
@@ -3404,7 +3771,7 @@ export default function Home() {
             !sleepMode &&
             !gameOver && (
               <p className="text-zinc-200 font-semibold text-sm sm:text-base">
-                Ajude a encontrar o golpista e coloque ele atrás das grades.
+                {t(locale, "banditFound")}
               </p>
             )}
 
@@ -3414,11 +3781,11 @@ export default function Home() {
                 {finalThemePhrase}
               </p>
               <p className="text-zinc-200 font-semibold text-sm sm:text-base">
-                vc chegou aqui em {formatTime(completionElapsedSeconds ?? totalElapsed)}
+                {t(locale, "reachedHereIn")} {formatTime(completionElapsedSeconds ?? totalElapsed)}
               </p>
               {hasReward("speed") && (
                 <p className="text-zinc-200 font-semibold text-sm sm:text-base">
-                  voce tem o meu respeito. DEV
+                  {t(locale, "respectDev")}
                 </p>
               )}
             </>
@@ -3441,24 +3808,24 @@ export default function Home() {
           {showHint && !statusMessage && (
             <p className={isMobile ? "text-sm" : "text-lg"}>
               {level.secretType === "heart"
-                ? `Dica: ${hint || "Encontre o coração escondido"}`
+                ? `${t(locale, "hintLabel")}: ${hint || t(locale, "hiddenHeart")}`
                 : level.secretType === "boss"
-                  ? `Dica: ${hint || "Encontre a caveira escondida"}`
+                  ? `${t(locale, "hintLabel")}: ${hint || t(locale, "hiddenSkull")}`
                   : level.secretType === "alien"
-                    ? `Dica: ${hint || "Encontre o alien escondido"}`
+                    ? `${t(locale, "hintLabel")}: ${hint || t(locale, "hiddenAlien")}`
                     : level.secretType === "ace"
-                      ? `Dica: ${hint || "Encontre o ás escondido"}`
+                      ? `${t(locale, "hintLabel")}: ${hint || t(locale, "hiddenAce")}`
                       : level.secretType === "jackpot"
-                        ? `Dica: ${hint || "Encontre o brilho dourado"}`
+                        ? `${t(locale, "hintLabel")}: ${hint || t(locale, "hiddenGlow")}`
                         : level.secretType === "bandit"
-                          ? `Dica: ${hint || "Encontre o golpista antes que ele fuja"}`
-                          : `Dica: ${hint || "Clique em algum bloco"}`}
+                          ? `${t(locale, "hintLabel")}: ${hint || t(locale, "hiddenBandit")}`
+                          : `${t(locale, "hintLabel")}: ${hint || t(locale, "clickAnyBlock")}`}
             </p>
           )}
 
           {!finalCelebration && found && !level.isSecret && !mainGameFinished && (
             <p className="text-base sm:text-lg text-amber-300 font-semibold">
-              🎉 Você encontrou o tesouro!
+              {t(locale, "foundTreasure")}
             </p>
           )}
 
@@ -3470,14 +3837,14 @@ export default function Home() {
                     {mainRunFinishedMessage}
                   </p>
                   <p className="text-green-400 text-lg sm:text-xl font-semibold">
-                    3 níveis em sequência: {formatTime(displayMainRunSeconds)}
+                    {t(locale, "sequence3")}: {formatTime(displayMainRunSeconds)}
                   </p>
                 </>
               )}
 
               {found && level.isSecret && (
                 <p className="text-green-400 text-lg sm:text-xl font-semibold">
-                  Tempo final: {formatTime(completionElapsedSeconds ?? totalElapsed)}
+                  {t(locale, "finalTime")}: {formatTime(completionElapsedSeconds ?? totalElapsed)}
                 </p>
               )}
 
@@ -3489,7 +3856,7 @@ export default function Home() {
                   const maskedValue = maskBlockedWords(nextValue);
                   setPlayerName(maskedValue);
                 }}
-                  placeholder="Seu nome"
+                  placeholder={t(locale, "yourName")}
                   maxLength={12}
                   autoComplete="nickname"
                   className="px-3 py-2 rounded bg-zinc-800 border border-zinc-600 text-white text-center outline-none focus:border-amber-400 text-sm sm:text-base"
@@ -3504,7 +3871,7 @@ export default function Home() {
                       : "bg-amber-400 hover:bg-amber-300 text-black"
                   }`}
                 >
-                  {rankingSaved ? (rankingPositionMessage || "RANKING SALVO") : "SALVAR RANKING"}
+                  {rankingSaved ? (rankingPositionMessage || t(locale, "rankingSaved")) : t(locale, "saveRanking")}
                 </button>
               </div>
             </>
@@ -3512,73 +3879,73 @@ export default function Home() {
 
           {found && level.secretType === "heart" && !finalCelebration && (
             <p className="text-base sm:text-lg text-rose-300 font-semibold max-w-2xl">
-              ❤️ Parabéns. Meu coração agora é seu!
-              <br />Dev
+              {t(locale, "congratsHeart")}
+              <br />{t(locale, "dev")}
             </p>
           )}
 
           {found && introSequenceDone && level.secretType === "boss" && !finalCelebration && (
             <p className="text-base sm:text-lg text-red-300 font-semibold max-w-2xl boss-glow">
-              💀 Eu jamais pensei que seria derrotado por um insolente como você...
-              <br />Mas desta vez, você venceu.
+              {t(locale, "bossWin1")}
+              <br />{t(locale, "bossWin2")}
             </p>
           )}
 
           {found && introSequenceDone && level.secretType === "alien" && !finalCelebration && (
             <p className="text-base sm:text-lg text-green-300 font-semibold max-w-2xl alien-glow">
-              👽 BUSQUE CONHECIMENTO...
+              {t(locale, "alienWin")}
             </p>
           )}
 
           {found && introSequenceDone && level.secretType === "ace" && !finalCelebration && (
             <p className="text-base sm:text-lg text-zinc-100 font-semibold max-w-2xl ace-glow">
-              ♠ Você puxou exatamente a carta certa.
-              <br />Hoje o baralho jogou a seu favor.
+              {t(locale, "aceWin1")}
+              <br />{t(locale, "aceWin2")}
             </p>
           )}
 
           {found && introSequenceDone && level.secretType === "jackpot" && !finalCelebration && (
             <p className="text-base sm:text-lg text-yellow-300 font-semibold max-w-2xl">
-              🎰 JACKPOT. Hoje a casa perdeu.
-              <br />As moedas escolheram você.
+              {t(locale, "jackpotWin1")}
+              <br />{t(locale, "jackpotWin2")}
             </p>
           )}
 
           {found && introSequenceDone && level.secretType === "bandit" && !finalCelebration && (
             <p className="text-base sm:text-lg text-zinc-100 font-semibold max-w-2xl">
-              👤 O golpista foi encontrado.
-              <br />Agora ele ficou atras das grades.
+              {t(locale, "banditWin1")}
+              <br />{t(locale, "banditWin2")}
             </p>
           )}
 
           {lostBoss && !finalCelebration && !gameOver && (
             <p className="text-base sm:text-lg text-red-400 font-semibold max-w-2xl boss-glow">
-              💀 Volte para o seu Fortnite, seu verme.
+              {t(locale, "bossLose")}
             </p>
           )}
 
           {lostAlien && !finalCelebration && !gameOver && (
             <p className="text-base sm:text-lg text-green-300 font-semibold max-w-2xl alien-glow">
-              👽 Depois que eu roubar todas as vacas da Terra... volto para te abduzir.
+              {t(locale, "alienLose")}
             </p>
           )}
 
           {lostAce && !finalCelebration && !gameOver && (
             <p className="text-base sm:text-lg text-zinc-300 font-semibold max-w-2xl ace-glow">
-              ♠ Você blefou mal.
-              <br />A casa levou essa mão.
+              {t(locale, "aceLose1")}
+              <br />{t(locale, "aceLose2")}
             </p>
           )}
 
           {lostJackpot && !finalCelebration && !gameOver && (
             <p className="text-base sm:text-lg text-yellow-300 font-semibold max-w-2xl">
-              🎰 Quase. O jackpot escapou dessa vez.
+              {t(locale, "jackpotLose")}
             </p>
           )}
 
           {lostBandit && !finalCelebration && !gameOver && (
             <p className="text-base sm:text-lg text-zinc-200 font-semibold max-w-2xl">
-              🚨 O golpista passou por entre as grades.
+              {t(locale, "banditLose")}
             </p>
           )}
         </div>
@@ -3826,7 +4193,7 @@ export default function Home() {
                 isMobile ? "px-4 py-2 text-sm rounded-lg" : "px-5 py-3 rounded-xl"
               }`}
             >
-              Ir para o próximo nível
+              {t(locale, "nextLevel")}
             </button>
           )}
 
@@ -3837,7 +4204,7 @@ export default function Home() {
                 isMobile ? "px-4 py-2 text-sm rounded-lg" : "px-5 py-3 rounded-xl"
               }`}
             >
-              Jogar fase secreta
+              {t(locale, "playSecret")}
             </button>
           )}
 
@@ -3848,7 +4215,7 @@ export default function Home() {
                 isMobile ? "px-4 py-2 text-sm rounded-lg" : "px-5 py-3 rounded-xl"
               }`}
             >
-              Enfrentar BOSS
+              {t(locale, "faceBoss")}
             </button>
           )}
 
@@ -3859,7 +4226,7 @@ export default function Home() {
                 isMobile ? "px-4 py-2 text-sm rounded-lg" : "px-5 py-3 rounded-xl"
               }`}
             >
-              Entrar na AREA 51
+              {t(locale, "enterArea51")}
             </button>
           )}
 
@@ -3870,7 +4237,7 @@ export default function Home() {
                 isMobile ? "px-4 py-2 text-sm rounded-lg" : "px-5 py-3 rounded-xl"
               }`}
             >
-              Virar a carta ACE
+              {t(locale, "flipAce")}
             </button>
           )}
 
@@ -3881,7 +4248,7 @@ export default function Home() {
                 isMobile ? "px-4 py-2 text-sm rounded-lg" : "px-5 py-3 rounded-xl"
               }`}
             >
-              Apostar no JACKPOT
+              {t(locale, "betJackpot")}
             </button>
           )}
 
@@ -3892,7 +4259,7 @@ export default function Home() {
                 isMobile ? "px-4 py-2 text-sm rounded-lg" : "px-5 py-3 rounded-xl"
               }`}
             >
-              Caçar o GOLPISTA
+              {t(locale, "huntBandit")}
             </button>
           )}
 
@@ -3904,7 +4271,7 @@ export default function Home() {
                 : "bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-white"
             } ${isMobile ? "px-4 py-2 text-sm rounded-lg" : "px-5 py-3 rounded-xl"}`}
           >
-            MAIS UMA VEZ!
+            {t(locale, "oneMoreTime")}
           </button>
 
           {canShare && (
@@ -3914,7 +4281,7 @@ export default function Home() {
                 isMobile ? "px-4 py-2 text-sm rounded-lg" : "px-5 py-3 rounded-xl"
               }`}
             >
-              Compartilhar resultado
+              {t(locale, "shareResult")}
             </button>
           )}
         </div>
@@ -3922,7 +4289,7 @@ export default function Home() {
         {!finalCelebration && trollMode && (
           <div className="text-center">
             <p className="text-amber-300 text-xs sm:text-sm">
-              Modo troll ativo: as dicas estão invertidas. CORRA!!!
+              {t(locale, "trollActive")}
             </p>
             {trollSecondsLeft !== null && currentLevel >= 1 && currentLevel <= 3 && (
               <p
@@ -3938,13 +4305,13 @@ export default function Home() {
 
         {!finalCelebration && found && !mainGameFinished && !gameFinished && !level.isSecret && (
           <p className="text-green-400 text-lg sm:text-xl font-semibold">
-            Você venceu o {level.name}!
+            {t(locale, "wonLevel")} {getLocalizedLevelName(level, locale)}!
           </p>
         )}
 
         {!finalCelebration && gameOver && (
           <p className="text-red-400 text-lg sm:text-xl font-semibold">
-            Você clicou em uma bomba.
+            {t(locale, "bombClicked")}
           </p>
         )}
 
@@ -3957,7 +4324,7 @@ export default function Home() {
           !sleepMode &&
           !gameOver && (
             <p className="text-red-400 text-lg sm:text-xl font-semibold">
-              Suas tentativas acabaram.
+              {t(locale, "attemptsOver")}
             </p>
           )}
 
@@ -3967,7 +4334,7 @@ export default function Home() {
           <div className="flex flex-col items-start gap-1 min-w-[72px]">
             {passwordProgress && currentLevel <= 3 && !mainGameFinished && !finalCelebration && (
               <p className="text-[10px] sm:text-xs text-zinc-500 tracking-[0.14em] uppercase">
-                password: <span className="text-zinc-400 normal-case tracking-normal">{passwordProgress}</span>
+                {"password"}: <span className="text-zinc-400 normal-case tracking-normal">{passwordProgress}</span>
               </p>
             )}
             <div
@@ -3975,13 +4342,13 @@ export default function Home() {
                 isMobile ? "min-h-[34px] px-2 py-1 text-xl min-w-[64px]" : "min-h-[40px] min-w-[72px] px-3 py-2 text-2xl"
               }`}
             >
-            {hasKey && !giftUnlocked && <span title="Chave">🔑</span>}
+            {hasKey && !giftUnlocked && <span title={t(locale, "key")}>🔑</span>}
 
             {hasDie && !dieUsed && (
               <button
                 onClick={handleRollDie}
                 className="hover:scale-110 transition"
-                title="Rolar dado"
+                title={t(locale, "rollDie")}
               >
                 🎲
               </button>
@@ -3992,7 +4359,7 @@ export default function Home() {
                 key={`${id}-${index}`}
                 onClick={() => handleHintCardClick(id)}
                 className="hover:scale-110 transition"
-                title="Ler dica"
+                title={t(locale, "readHint")}
               >
                 {HINT_CARD_EMOJI[id]}
               </button>
@@ -4025,8 +4392,8 @@ export default function Home() {
             className={`rounded-full border border-zinc-700 bg-zinc-900/90 hover:bg-zinc-800 text-white flex items-center justify-center transition shadow-lg ${
               isMobile ? "w-11 h-11 text-lg" : "w-12 h-12 text-xl"
             }`}
-            title="Abrir guia"
-            aria-label="Abrir guia"
+            title={t(locale, "openGuide")}
+            aria-label={t(locale, "openGuide")}
           >
             📖
           </button>
@@ -4035,8 +4402,8 @@ export default function Home() {
             className={`rounded-full border border-zinc-700 bg-zinc-900/90 text-white flex flex-col items-center justify-center shadow-lg ${
               isMobile ? "w-11 h-11" : "w-12 h-12"
             }`}
-            title="Jogadores online"
-            aria-label="Jogadores online"
+            title={t(locale, "playersOnline")}
+            aria-label={t(locale, "playersOnline")}
           >
             <span className={isMobile ? "text-sm leading-none" : "text-base leading-none"}>👤</span>
             <span className="text-[10px] leading-none mt-1">{onlineCount}</span>
@@ -4047,8 +4414,8 @@ export default function Home() {
             className={`rounded-full border border-zinc-700 bg-zinc-900/90 hover:bg-zinc-800 text-white flex items-center justify-center transition shadow-lg ${
               isMobile ? "w-11 h-11 text-lg" : "w-12 h-12 text-xl"
             }`}
-            title={soundEnabled ? "Desativar som" : "Ativar som"}
-            aria-label={soundEnabled ? "Desativar som" : "Ativar som"}
+            title={soundEnabled ? t(locale, "soundOn") : t(locale, "soundOff")}
+            aria-label={soundEnabled ? t(locale, "soundOn") : t(locale, "soundOff")}
           >
             {soundEnabled ? "🔊" : "🔇"}
           </button>
@@ -4058,8 +4425,8 @@ export default function Home() {
             className={`rounded-full border border-zinc-700 bg-zinc-900/90 hover:bg-zinc-800 text-white flex items-center justify-center transition shadow-lg ${
               isMobile ? "w-11 h-11 text-lg" : "w-12 h-12 text-xl"
             }`}
-            title="Abrir ranking"
-            aria-label="Abrir ranking"
+            title={t(locale, "openRanking")}
+            aria-label={t(locale, "openRanking")}
           >
             🏆
           </button>
@@ -4067,7 +4434,7 @@ export default function Home() {
       )}
       {introSequenceDone && (
       <div className="fixed bottom-3 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 text-[10px] sm:text-xs text-zinc-500/70 tracking-[0.14em] uppercase whitespace-nowrap">
-        <span>SEASON 1 - THE VOID</span>
+        <span>{t(locale, "footerSeason")}</span>
         <span>|</span>
         <a
           href={HELP_DEV_LINK}
@@ -4075,7 +4442,7 @@ export default function Home() {
           rel="noopener noreferrer"
           className="hover:text-zinc-300 transition"
         >
-          HELP the DEV
+          {t(locale, "helpDevFooter")}
         </a>
       </div>
       )}
