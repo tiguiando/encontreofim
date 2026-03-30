@@ -1,3 +1,5 @@
+const BANNED_WORDS = ["fuck","fuk","fck","f*ck","f**k","fukc","phuck","shit","sh1t","sh!t","$hit","bullshit","bitch","b1tch","biatch","b!tch","ass","a$$","@ss","asshole","a$$hole","arse","arsehole","dick","d1ck","d!ck","cock","c0ck","pussy","pusy","p*ssy","hoe","h0e","slut","slvt","whore","wh0re","motherfucker","mf","mfer","puta","put@","put4","puto","put0","putinho","putinha","porra","p0rra","caralho","car4lho","krl","merda","m3rda","fdp","filhadaputa","filhodaputa","buceta","buc3ta","bct","cu","cú","cuzão","cuz0","cuzao","pinto","pint0","pintao","pintão","pintudo","rola","rol4","cacete","kct","kacet3","carai","karai","cabron","cabrón","cabrao","mierda","mierd4","putamadre","hijo de puta","hijodeputa","coño","cono","cojones","joder","j0der","gilipollas","gilip0llas","verga","v3rga","chingar","ching4r","chingado","chingada","chingados","chingadas"];
+function isNameValid(name: string) { const normalized = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); return !BANNED_WORDS.some(word => normalized.includes(word)); }
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -1666,6 +1668,7 @@ export default function Home() {
       return;
     }
 
+    if (!isNameValid(safeName)) { alert("Nome inválido 😅"); return; }
     window.localStorage.setItem("encontreofim-player-name", safeName);
   }, [playerName]);
 
