@@ -775,13 +775,7 @@ function normalizeRankingEntries(items: any[]): RankingEntry[] {
 }
 
 
-const BANNED_WORDS = ["fuck","fuk","fck","f*ck","f**k","fukc","phuck","shit","sh1t","sh!t","$hit","bullshit","bitch","b1tch","biatch","b!tch","ass","a$$",
-                      "@ss","asshole","a$$hole","arse","arsehole","dick","d1ck","d!ck","cock","c0ck","pussy","pusy","p*ssy","hoe","h0e","slut","slvt","whore",
-                      "wh0re","motherfucker","mf","mfer","puta","put@","put4","puto","put0","putinho","putinha","porra","p0rra","caralho","car4lho","krl","merda",
-                      "m3rda","fdp","filhadaputa","filhodaputa","buceta","buc3ta","bct","cu","cú","cuzão","cuz0","cuzao","pinto","pint0","pintao","pintão","pintudo",
-                      "rola","rol4","cacete","kct","kacet3","carai","karai","cabron","cabrón","cabrao","mierda","mierd4","putamadre","hijo de puta","hijodeputa","coño",
-                      "cono","cojones","joder","j0der","gilipollas","gilip0llas","verga","v3rga","chingar","ching4r","chingado","chingada","chingados","chingadas"];
-
+const BANNED_WORDS = ["fuck","fuk","fck","f*ck","f**k","fukc","phuck","shit","sh1t","sh!t","$hit","bullshit","bitch","b1tch","biatch","b!tch","asshole","a$$hole","arse","arsehole","dick","d1ck","d!ck","cock","c0ck","pussy","pusy","p*ssy","slut","slvt","whore","wh0re","motherfucker","mfer","puta","put@","put4","puto","put0","putinho","putinha","porra","p0rra","caralho","car4lho","krl","merda","m3rda","fdp","filhadaputa","filhodaputa","buceta","buc3ta","bct","cuzão","cuz0","cuzao","pinto","pint0","pintao","pintão","pintudo","rola","rol4","cacete","kct","kacet3","carai","karai","cabron","cabrón","cabrao","mierda","mierd4","putamadre","hijodeputa","coño","cono","cojones","joder","j0der","gilipollas","gilip0llas","verga","v3rga","chingar","ching4r","chingado","chingada","chingados","chingadas"];
 
 function normalizeBlockedText(text: string) {
   return text
@@ -791,20 +785,20 @@ function normalizeBlockedText(text: string) {
     .replace(/[^a-z]/g, "");
 }
 
+function isNameValid(name: string) {
+  const normalized = normalizeBlockedText(name);
+  return !BANNED_WORDS.some((word) => normalized.includes(normalizeBlockedText(word)));
+}
+
 function containsBlockedWord(text: string) {
   const normalized = normalizeBlockedText(text);
   return BANNED_WORDS.some((word) => normalized.includes(word));
 }
 
 function maskBlockedWords(text: string) {
-  let masked = text;
-
-  for (const word of BANNED_WORDS) {
-    const pattern = new RegExp(word.split("").join("[^a-zA-Z]*"), "gi");
-    masked = masked.replace(pattern, (match) => "*".repeat(match.length));
-  }
-
-  return masked;
+  const trimmed = text.slice(0, 12);
+  if (!trimmed) return trimmed;
+  return containsBlockedWord(trimmed) || !isNameValid(trimmed) ? "*".repeat(trimmed.length) : trimmed;
 }
 
 export default function Home() {
@@ -1392,8 +1386,9 @@ export default function Home() {
     if (!trimmedName || rankingSaved) return;
 
     const maskedName = maskBlockedWords(trimmedName);
-    if (containsBlockedWord(trimmedName) || maskedName !== trimmedName) {
-      setPlayerName(maskedName);
+    if (containsBlockedWord(trimmedName) || maskedName !== trimmedName || !isNameValid(trimmedName)) {
+      const safeMaskedName = maskedName.slice(0, 12);
+      setPlayerName(safeMaskedName);
       flashStatus("Nome inválido 🚫");
       return;
     }
@@ -1634,8 +1629,13 @@ export default function Home() {
     const savedName = window.localStorage.getItem("encontreofim-player-name");
     if (!savedName) return;
 
-    const safeName = maskBlockedWords(savedName).slice(0, 12);
+    const safeName = savedName.slice(0, 12).trim();
     if (!safeName) return;
+
+    if (!isNameValid(safeName) || containsBlockedWord(safeName) || maskBlockedWords(safeName) !== safeName) {
+      setPlayerName(maskBlockedWords(safeName).slice(0, 12));
+      return;
+    }
 
     setPlayerName(safeName);
   }, []);
@@ -1646,6 +1646,11 @@ export default function Home() {
     const safeName = playerName.trim().slice(0, 12);
     if (!safeName) {
       window.localStorage.removeItem("encontreofim-player-name");
+      return;
+    }
+
+    if (!isNameValid(safeName) || containsBlockedWord(safeName) || maskBlockedWords(safeName) !== safeName) {
+      window.localStorage.setItem("encontreofim-player-name", maskBlockedWords(safeName).slice(0, 12));
       return;
     }
 
@@ -3032,12 +3037,7 @@ export default function Home() {
                 value={playerName}
                 onChange={(e) => {
                   const nextValue = e.target.value.slice(0, 12);
-                  const maskedValue = maskBlockedWords(nextValue);
-                  setPlayerName(maskedValue);
-
-                  if (containsBlockedWord(nextValue) || maskedValue !== nextValue) {
-                    flashStatus("Nome inválido 🚫");
-                  }
+                  setPlayerName(nextValue);
                 }}
                 placeholder="SEU NOME"
                 maxLength={12}
@@ -3471,14 +3471,9 @@ export default function Home() {
                 <input
                   value={playerName}
                   onChange={(e) => {
-                    const nextValue = e.target.value.slice(0, 12);
-                    const maskedValue = maskBlockedWords(nextValue);
-                    setPlayerName(maskedValue);
-
-                    if (containsBlockedWord(nextValue) || maskedValue !== nextValue) {
-                      flashStatus("Nome inválido 🚫");
-                    }
-                  }}
+                  const nextValue = e.target.value.slice(0, 12);
+                  setPlayerName(nextValue);
+                }}
                   placeholder="Seu nome"
                   maxLength={12}
                   autoComplete="nickname"
