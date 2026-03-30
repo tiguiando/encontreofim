@@ -798,7 +798,20 @@ function containsBlockedWord(text: string) {
 function maskBlockedWords(text: string) {
   const trimmed = text.slice(0, 12);
   if (!trimmed) return trimmed;
-  return containsBlockedWord(trimmed) || !isNameValid(trimmed) ? "*".repeat(trimmed.length) : trimmed;
+
+  let masked = trimmed;
+  for (const word of BANNED_WORDS) {
+    const normalizedWord = normalizeBlockedText(word);
+    if (!normalizedWord) continue;
+
+    const escapedChars = normalizedWord
+      .split("")
+      .map((char) => char.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+    const pattern = new RegExp(escapedChars.join("[^a-zA-Z0-9]*"), "gi");
+    masked = masked.replace(pattern, (match) => "*".repeat(match.length));
+  }
+
+  return masked;
 }
 
 export default function Home() {
