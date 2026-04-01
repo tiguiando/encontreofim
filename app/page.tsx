@@ -4453,7 +4453,7 @@ export default function Home() {
   rel="noopener noreferrer"
   className="hover:text-zinc-300 transition"
 >
-  REDDIT
+  REDDIT 🗣️
 </a>
       </div>
       )}
