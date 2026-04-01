@@ -54,6 +54,8 @@ type RankingEntry = {
 const SHARE_LINK = "https://encontreofim.vercel.app/";
 const HELP_DEV_LINK =
   "https://www.youtube.com/@tiguiando?sub_confirmation=1&sub_confirmation=1";
+const REDDIT_LINK =
+  "https://www.reddit.com/r/programacao/comments/1s5pvqn/encontre_o_fim_season_1_the_void_jogo_point_and/";
 
 const MAX_CLICKS = 5;
 const IDLE_KNOCK_MS = 33_000;
@@ -4437,13 +4439,22 @@ export default function Home() {
         <span>{t(locale, "footerSeason")}</span>
         <span>|</span>
         <a
-          href={HELP_DEV_LINK}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="hover:text-zinc-300 transition"
-        >
-          {t(locale, "helpDevFooter")}
-        </a>
+  href={HELP_DEV_LINK}
+  target="_blank"
+  rel="noopener noreferrer"
+  className="hover:text-zinc-300 transition"
+>
+  {t(locale, "helpDevFooter")}
+</a>
+<span>|</span>
+<a
+  href={REDDIT_LINK}
+  target="_blank"
+  rel="noopener noreferrer"
+  className="hover:text-zinc-300 transition"
+>
+  REDDIT
+</a>
       </div>
       )}
 
